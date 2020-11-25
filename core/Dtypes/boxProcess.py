@@ -229,7 +229,7 @@ class BBox:
             text_origin,
             cv.FONT_HERSHEY_SIMPLEX,
             font_scale, (0, 0, 0), thickness,
-            cv.LINE_4
+            cv.LINE_AA
         )
 
     def as_np_array(self) -> np.array:

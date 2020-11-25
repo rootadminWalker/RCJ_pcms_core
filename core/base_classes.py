@@ -24,14 +24,14 @@ SOFTWARE.
 
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, List
 import numpy as np
 
 import rospy
 
 
-class ModelInput(ABC):
+class ModelInput:
     @abstractmethod
     def preprocess_to(self, input_data) -> Any:
         return input_data
@@ -41,13 +41,13 @@ class ModelInput(ABC):
         return blob
 
 
-class Outputs(ABC):
+class Outputs:
     @abstractmethod
     def process_outputs(self, outputs: Any) -> Any:
         return outputs
 
 
-class Detector(ABC):
+class Detector:
     def __init__(
             self,
             detector: Any,
@@ -67,30 +67,56 @@ class Detector(ABC):
         pass
 
 
-class NodeProgram(ABC):
-    def __init__(self, name):
-        self.name = name
+class NodeProgram:
+    def __init__(self, node_id):
+        self.id = node_id
 
     @abstractmethod
-    def serialize_output(self, outputs: Any) -> Any:
+    def serialize_output(self) -> Any:
         pass
 
 
-class Node(ABC):
-    def __init__(self, name: str, nodes: List[NodeProgram], anonymous: bool = True):
+class Node:
+    def __init__(self, name: str = 'node', anonymous: bool = True):
+        """
+
+        Args:
+            name: The name of the node, will be use in rospy.init_node
+            anonymous: If you want to generate a random ID for the node
+
+        """
         self.name = name
-        self.nodes = nodes
         self.anonymous = anonymous
 
-        if len(self.nodes) == 1:
-            rospy.init_node(self.nodes[0].name)
-        else:
-            rospy.init_node(self.name)
+        rospy.init_node(self.name, anonymous=self.anonymous)
+        rospy.loginfo(f'Node {rospy.get_name()} Created')
 
     @abstractmethod
     def reset(self):
+        """
+        This method will reset every values in the Node
+        """
         pass
 
     @staticmethod
     def spin():
+        """
+        Call rospy.spin to spin the node
+        """
         rospy.spin()
+
+    @staticmethod
+    def wait_for_msg(topic, data_class):
+        """
+        You can use this method for waiting a msg with info coming out
+
+        Args:
+            topic: The topic you want to wait for
+            data_class:
+
+        Returns: None
+
+        """
+        rospy.loginfo(f'Waiting response from {topic}')
+        rospy.wait_for_message(topic, data_class)
+        rospy.loginfo(f'{topic}: Ok')
