@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-from core.base_classes import NodeProgram
+from ...base_classes import NodeProgram
 import genpy
 
 from abc import abstractmethod

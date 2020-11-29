@@ -26,7 +26,7 @@ SOFTWARE.
 from abc import ABC
 from typing import Dict
 
-from core.Dtypes import BBox
+from ..Dtypes import BBox
 
 
 class FollowerStateInfo:

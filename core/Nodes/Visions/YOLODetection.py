@@ -24,7 +24,7 @@ SOFTWARE.
 
 """
 
-from core.Detection import YOLOInput, YOLOProcess, YOLODetector
+from ...Detection import YOLOInput, YOLOProcess, YOLODetector
 from .vision_abstract import VisionNodeProgram
 
 from home_robot_msgs.msg import ObjectBox, ObjectBoxes

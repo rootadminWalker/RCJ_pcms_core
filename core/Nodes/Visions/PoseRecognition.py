@@ -24,14 +24,14 @@ SOFTWARE.
 
 """
 
-from core.Detection import PoseDetector, PoseRecognitionInput, PoseRecognitionProcess, PoseRecognitionDetector
-from core.base_classes import NodeProgram
-from core.tools import OpenPose
-from core.Dtypes import BBox
+from ...Detection import PoseDetector, PoseRecognitionInput, PoseRecognitionProcess, PoseRecognitionDetector
+from ...base_classes import NodeProgram
+from ...tools import OpenPose
+from ...Dtypes import BBox
 
 from home_robot_msgs.msg import HumanPose
 
-from keras.models import Model
+from tensorflow.keras.models import Model
 import numpy as np
 
 

@@ -25,7 +25,7 @@ SOFTWARE.
 
 """
 
-from core.Dtypes.boxProcess import posToBBox
+from .boxProcess import posToBBox
 
 import cv2 as cv
 import numpy as np
