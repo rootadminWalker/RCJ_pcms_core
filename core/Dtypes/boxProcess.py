@@ -25,15 +25,12 @@ SOFTWARE.
 
 """
 
-from home_robot_msgs.msg import ObjectBox, ObjectBoxes
-
-from imutils.object_detection import non_max_suppression
 from math import sqrt
-from typing import List
-from itertools import zip_longest
+
 import cv2 as cv
-import numpy as np
 import dlib
+import numpy as np
+from home_robot_msgs.msg import ObjectBox
 
 
 class BBox:
@@ -125,6 +122,7 @@ class BBox:
             label: str = '',
             model: str = '',
             score: float = 0.0,
+            source_img=None,
             padding=None,
             shape=None
     ):
@@ -164,6 +162,8 @@ class BBox:
         self.height = self.y2 - self.y1
         self.width = self.x2 - self.x1
 
+        self.source_img = source_img
+
         self.serialize_msg = ObjectBox()
 
     def __repr__(self):
@@ -198,14 +198,13 @@ class BBox:
             'x2': px2 if px2 < shape[1] else shape[1],
             'y2': py2 if py2 < shape[0] else shape[0]
         }
-        return BBox(self.padding_box)
+        return BBox(coordinates=self.padding_box)
 
     def is_inBox(self, box2):
-        box2_pos = box2.coordinates
-        isX1 = self.coordinates['x1'] - box2_pos['x1'] >= 0
-        isY1 = self.coordinates['y1'] - box2_pos['y1'] >= 0
-        isX2 = self.coordinates['x2'] - box2_pos['x2'] <= 0
-        isY2 = self.coordinates['y2'] - box2_pos['y2'] <= 0
+        isX1 = self.x1 - box2.x1 >= 0
+        isY1 = self.y1 - box2.y1 >= 0
+        isX2 = self.x2 - box2.x2 <= 0
+        isY2 = self.y2 - box2.y2 <= 0
 
         return isX1 and isY1 and isX2 and isY2
 
@@ -231,6 +230,25 @@ class BBox:
             font_scale, (0, 0, 0), thickness,
             cv.LINE_AA
         )
+
+    def bb_iou_score(self, boxB):
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(self.x1, boxB.x1)
+        yA = max(self.y1, boxB.y1)
+        xB = min(self.x2, boxB.x2)
+        yB = min(self.y2, boxB.y2)
+        # compute the area of intersection rectangle
+        interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+        # compute the area of both the prediction and ground-truth
+        # rectangles
+        boxAArea = self.area
+        boxBArea = boxB.area
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+        # return the intersection over union value
+        return iou
 
     def as_np_array(self) -> np.array:
         return np.array([self.x1, self.y1, self.x2, self.y2])
@@ -265,74 +283,3 @@ class BBox:
         self.serialize_msg.label = self.label
 
         return self.serialize_msg
-
-
-get_pos_from_object_box = np.vectorize(lambda box: (box.x1, box.y1, box.x2, box.y2, box.label))
-
-
-def filterBoxes(out_boxes, min_area):
-    out_boxes = filter(lambda x: x.area >= min_area, out_boxes)
-    return list(out_boxes)
-
-
-def posToBBox(out_boxes, labels=None, padding=None, shape=None):
-    if labels is None:
-        labels = []
-    after_bboxing = []
-    out_boxes_combined = list(zip_longest(out_boxes, labels, fillvalue=''))
-
-    for box, label in out_boxes_combined:
-        x1, y1, x2, y2 = box
-        after_bboxing.append(BBox(
-            x1=x1,
-            y1=y1,
-            x2=x2,
-            y2=y2,
-            label=label,
-            padding=padding, shape=shape
-        ))
-
-    return after_bboxing
-
-
-def dlibToBBox(out_boxes: List[dlib.rectangle], padding=None, shape=None):
-    after_bboxing = []
-    for dlib_box in out_boxes:
-        after_bboxing.extend(
-            posToBBox([
-                dlib_box.left(),
-                dlib_box.top(),
-                dlib_box.right(),
-                dlib_box.bottom()
-            ], padding=padding, shape=shape)
-        )
-
-    return after_bboxing
-
-
-def deserialize_ros_to_bbox(object_boxes: ObjectBoxes):
-    if len(object_boxes.boxes) == 0:
-        return []
-
-    boxes_data = get_pos_from_object_box(object_boxes.boxes)
-    boxes_data = np.array(boxes_data)
-    boxes_data = np.transpose(boxes_data)
-
-    poses = boxes_data[:, :4]
-    labels = boxes_data[:, -1]
-
-    return posToBBox(out_boxes=poses.astype(int), labels=labels)
-
-
-def BBoxToPos(out_boxes):
-    for box in out_boxes:
-        yield box.as_np_array()
-
-
-def do_nms(boxes, use_bbox=True, padding=None, shape=None):
-    processed_box = non_max_suppression(boxes)
-
-    if use_bbox:
-        return posToBBox(processed_box, padding, shape)
-
-    return processed_box
