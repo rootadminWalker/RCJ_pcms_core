@@ -208,9 +208,9 @@ class BBox:
 
         return isX1 and isY1 and isX2 and isY2
 
-    def calc_distance_between_boxes(self, box2: 'BBox'):
-        x_distance = self.centroid[0] - box2.centroid[0]
-        y_distance = self.centroid[1] - box2.centroid[1]
+    def calc_distance_between_point(self, point2):
+        x_distance = self.centroid[0] - point2[0]
+        y_distance = self.centroid[1] - point2[1]
         return sqrt((x_distance ** 2) + (y_distance ** 2))
 
     def draw(self, image, color=(255, 32, 255), thickness=5):
