@@ -25,7 +25,7 @@ SOFTWARE.
 
 """
 
-from .boxProcess import posToBBox
+from ..utils.boxing import posToBBox
 
 import cv2 as cv
 import numpy as np
@@ -79,7 +79,7 @@ class PoseGesture:
         masked_gesture_y = gesture_y[np.where(gesture_y > 0)]
 
         if len(masked_gesture_x) == 0 or len(masked_gesture_y) == 0:
-            return 0, 0, 0, 0
+            return None
 
         # Get box coordinates
         x1 = min(masked_gesture_x)
