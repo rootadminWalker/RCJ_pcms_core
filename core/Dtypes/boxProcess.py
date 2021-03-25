@@ -26,9 +26,13 @@ SOFTWARE.
 """
 
 from math import sqrt
-
+import warnings
 import cv2 as cv
-import dlib
+try:
+    import dlib
+except ImportError:
+    warnings.warn('Dlib rectangle feature will be disabled', ImportWarning)
+
 import numpy as np
 from home_robot_msgs.msg import ObjectBox
 
@@ -253,8 +257,8 @@ class BBox:
     def as_np_array(self) -> np.array:
         return np.array([self.x1, self.y1, self.x2, self.y2])
 
-    def as_dlib_rectangle(self) -> dlib.rectangle:
-        return dlib.rectangle(self.x1, self.y1, self.x2, self.y2)
+    # def as_dlib_rectangle(self) -> dlib.rectangle:
+    #     return dlib.rectangle(self.x1, self.y1, self.x2, self.y2)
 
     def as_list(self) -> list:
         return [self.x1, self.y1, self.x2, self.y2]
