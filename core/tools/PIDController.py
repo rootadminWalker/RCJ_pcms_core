@@ -40,3 +40,5 @@ class PIDController:
 
         self.last_error = error
         self.iter_error += error
+
+        return calculate_value
