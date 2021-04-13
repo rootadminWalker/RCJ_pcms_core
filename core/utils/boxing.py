@@ -1,6 +1,9 @@
 from typing import List
-
-import dlib
+import warnings
+try:
+    import dlib
+except ImportError:
+    warnings.warn('Dlib rectangle feature will be disabled', ImportWarning)
 import numpy as np
 from home_robot_msgs.msg import ObjectBox
 from imutils.object_detection import non_max_suppression

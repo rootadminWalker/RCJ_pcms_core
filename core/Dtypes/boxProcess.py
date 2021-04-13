@@ -26,9 +26,13 @@ SOFTWARE.
 """
 
 from math import sqrt
-
+import warnings
 import cv2 as cv
-import dlib
+try:
+    import dlib
+except ImportError:
+    warnings.warn('Dlib rectangle feature will be disabled', ImportWarning)
+
 import numpy as np
 from home_robot_msgs.msg import ObjectBox
 
@@ -216,8 +220,8 @@ class BBox:
     def draw(self, image, color=(255, 32, 255), thickness=5):
         cv.rectangle(image, (self.x1, self.y1), (self.x2, self.y2), color, thickness)
 
-    def draw_centroid(self, image, color, thickness):
-        cv.circle(image, self.centroid, 5, color, thickness)
+    def draw_centroid(self, image, color, radius=5, thickness=-1):
+        cv.circle(image, self.centroid, radius, color, thickness)
 
     def putText_at_top(self, image, text, color=(255, 32, 255), thickness=2, font_scale=1):
         text_origin = (self.x1, self.y1 - thickness - font_scale)
@@ -253,8 +257,8 @@ class BBox:
     def as_np_array(self) -> np.array:
         return np.array([self.x1, self.y1, self.x2, self.y2])
 
-    def as_dlib_rectangle(self) -> dlib.rectangle:
-        return dlib.rectangle(self.x1, self.y1, self.x2, self.y2)
+    # def as_dlib_rectangle(self) -> dlib.rectangle:
+    #     return dlib.rectangle(self.x1, self.y1, self.x2, self.y2)
 
     def as_list(self) -> list:
         return [self.x1, self.y1, self.x2, self.y2]

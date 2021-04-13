@@ -31,7 +31,7 @@ from typing import Any
 
 
 class VisionNodeProgram(NodeProgram):
-    def __init__(self, node_id, ):
+    def __init__(self, node_id):
         super(VisionNodeProgram, self).__init__(node_id)
 
         self.output_msg = genpy.Message
