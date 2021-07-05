@@ -31,24 +31,32 @@ from typing import Any
 import rospy
 from home_robot_msgs.msg import CommandData
 from rospkg import RosPack
+from std_msgs.msg import String
 
-from core.base_classes import NodeProgram
+from ..base_classes import NodeProgram
 
 
 class ActionController(NodeProgram):
-    base = RosPack().get_path('rcj_pcms_base')
+    BASE = RosPack().get_path('rcj_pcms_base')
 
     def __init__(
             self,
             node_id,
             config_file: str,
-            action_commands: str = join(base, './scripts/action_commands')
+            action_commands: str = join(BASE, './scripts/action_commands')
     ):
         super(ActionController, self).__init__(node_id)
+        self.speaker_pub = rospy.Publisher(
+            '/speaker/say',
+            String,
+            queue_size=1
+        )
+        rospy.sleep(.5)
+
         self.config_file = config_file
         self.action_commands = action_commands
 
-        self.configs = json.load(open(self.config_file, 'r'))
+        self.configs = json.load(open(join(ActionController.BASE, self.config_file), 'r'))
 
         self.require_keywords_status = False
         self.separately_keywords_status = False
@@ -58,12 +66,14 @@ class ActionController(NodeProgram):
 
         self.serialize_msg = CommandData()
 
-        self.meaning = self.response = self.action = ''
+        self.meaning = self.response = ''
+        self.actions = []
 
     def run(self, text: str, serialize: bool = False) -> (str, str, list):
         for meaning, configs in self.configs.items():
-            self.require_keywords = configs['require']
-            self.separately_keywords = configs['separately']
+            self.require_keywords = configs['and']
+            self.separately_keywords = configs['or']
+            rospy.loginfo(f'{self.require_keywords}, {self.separately_keywords}')
 
             self._has_require_keywords(text)
             self._has_separately_keywords(text)
@@ -71,34 +81,44 @@ class ActionController(NodeProgram):
             if self.require_keywords_status and self.separately_keywords_status:
                 # Get response and action
                 self.response = configs['response']
-                self.action = configs['action']
+                self.actions = configs['action']
+                self.meaning = meaning
+
+                self.speaker_pub.publish(String(self.response))
 
                 rospy.loginfo(f'Text \'{text}\' matched, Meaning: {meaning}, response: {self.response}')
 
-                # Get the command and args
-                command, args = self.action
-                command = join(self.action_commands, command)
+                if len(self.actions) != 0:
+                    for action in self.actions:
+                        # Get the command and args
+                        command, *args = action
+                        path_command = join(self.action_commands, command) + '.py'
 
-                command_status = subprocess.run([command, args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        full_command = [path_command]
+                        full_command.extend(args)
 
-                # Decode the stdout
-                stdout = command_status.stdout.decode('ascii')
-                # Check the returncode
-                if command_status.returncode == 0:
-                    # Return code 0 means program executed successfully
-                    rospy.loginfo(f'Action {command} has run successfully')
-                    if stdout != '':
-                        rospy.loginfo(f'stdout: {stdout}')
-                else:
-                    # If status code is not 0, which means action stopped unexpectedly
-                    # Log the error
-                    rospy.logerr(f'Action failed with exit code {command_status.returncode}')
-            else:
-                rospy.logerr(f'Text \'{text}\' doesn\'t match anybody in the config file')
+                        command_status = subprocess.run(full_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            if serialize:
-                return self.serialize_output()
-            return self.meaning, self.response, self.action
+                        # Decode the stdout
+                        stdout = command_status.stdout.decode('ascii')
+                        # Check the returncode
+                        if command_status.returncode == 0:
+                            # Return code 0 means program executed successfully
+                            rospy.loginfo(f'Action <{" ".join(action)}> has run successfully')
+                            if stdout != '':
+                                rospy.loginfo(f'stdout: {stdout}')
+                        else:
+                            # If status code is not 0, which means action stopped unexpectedly
+                            # Log the error
+                            rospy.logerr(f'Action <{" ".join(action)}> failed with exit code {command_status.returncode}')
+                break
+        else:
+            rospy.logerr(f'Text \'{text}\' doesn\'t match anybody in the config file')
+            self.response = self.meaning = ''
+
+        if serialize:
+            return self.serialize_output()
+        return self.meaning, self.response, self.actions
 
     @staticmethod
     def _input_text_processor(text):
@@ -106,6 +126,10 @@ class ActionController(NodeProgram):
 
     def _has_require_keywords(self, text):
         input_text = self._input_text_processor(text)
+        if len(self.require_keywords) == 0:
+            self.require_keywords_status = True
+            return
+
         for require_keyword in self.require_keywords:
             require_keyword = self._input_text_processor(require_keyword)
             if require_keyword not in input_text:
@@ -116,6 +140,10 @@ class ActionController(NodeProgram):
 
     def _has_separately_keywords(self, text):
         input_text = self._input_text_processor(text)
+        if len(self.separately_keywords) == 0:
+            self.separately_keywords_status = True
+            return
+
         for separately_keyword in self.separately_keywords:
             separately_keyword = self._input_text_processor(separately_keyword)
             if separately_keyword in input_text:
@@ -127,5 +155,5 @@ class ActionController(NodeProgram):
     def serialize_output(self) -> Any:
         self.serialize_msg.meaning = self.meaning
         self.serialize_msg.response = self.response
-        self.serialize_msg.action = ' '.join(self.action)
+        # self.serialize_msg.action = ';'.join(self.actions)
         return self.serialize_msg
