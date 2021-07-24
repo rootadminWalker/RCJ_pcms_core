@@ -224,8 +224,8 @@ class BBox:
         cv.circle(image, self.centroid, radius, color, thickness)
 
     def putText_at_top(self, image, text, color=(255, 32, 255), thickness=2, font_scale=1):
-        text_origin = (self.x1, self.y1 - thickness - font_scale)
-        cv.rectangle(image, (self.x1, text_origin[1] - 30), (self.x2, self.y1), color, thickness=-1)
+        text_origin = (self.x1, int(self.y1 - thickness - font_scale))
+        cv.rectangle(image, (self.x1, text_origin[1] - 30), (self.x2, self.y1), color, -1)
         cv.putText(
             image,
             text,
