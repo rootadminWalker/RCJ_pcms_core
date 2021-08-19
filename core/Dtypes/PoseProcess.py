@@ -14,7 +14,7 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
+z6
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -88,14 +88,17 @@ class PoseGesture:
         y2 = max(masked_gesture_y)
 
         if to_bbox:
-            return posToBBox([[x1, y1, x2, y2]])[0]
+            return list(posToBBox([[x1, y1, x2, y2, '', 1., 'openpose']]))[0]
 
         return x1, y1, x2, y2
 
     def to_black_board(self):
         new_data = []
-        # Get box of pose_gesture
-        x1, y1, x2, y2 = self.to_box()
+        try:
+            # Get box of pose_gesture
+            x1, y1, x2, y2 = self.to_box()
+        except:
+            return None
 
         for j in range(18):
             num_x = self.one_person_gesture_points[j][0]
