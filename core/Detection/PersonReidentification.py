@@ -25,15 +25,24 @@ SOFTWARE.
 """
 import cv2 as cv
 import numpy as np
+import imutils
 
 
 class PersonReidentification:
     def __init__(self, person_extractor: cv.dnn_Net):
         self.person_extractor = person_extractor
 
-    def parse_descriptor(self, person_image) -> np.array:
+    def parse_descriptor(self, person_image, crop=False) -> np.array:
+        blob = person_image
+        if crop:
+            scale_image = imutils.resize(person_image, height=256)
+            _, W, _ = scale_image.shape
+            cW = W // 2
+            # print(scale_image.shape)
+            blob = scale_image[:, cW-128:cW+128, :]
+
         blob = cv.dnn.blobFromImage(
-            person_image,
+            blob,
             size=(128, 256),
             scalefactor=1.0,
             mean=(0, 0, 0),
