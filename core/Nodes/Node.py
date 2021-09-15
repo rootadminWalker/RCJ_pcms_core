@@ -23,23 +23,51 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-from abc import ABC
-from typing import Dict
+from abc import abstractmethod
 
-from ..Dtypes import BBox
+import rospy
 
 
-class FollowerStateInfo:
-    def __init__(self, **kwargs):
+class NodeProgram:
+    def __init__(self, node_id):
+        self.id = node_id
+
+    @abstractmethod
+    def serialize_output(self) -> Any:
         pass
 
 
-class FollowerState(ABC):
-    def __init__(self, state_info: FollowerStateInfo):
-        self.state_info = state_info
+class Node:
+    @abstractmethod
+    def main(self):
+        pass
 
+    @abstractmethod
+    def reset(self):
+        """
+        This method will reset every values in the Node
+        """
+        pass
 
-class LossTarget(ABC):
-    def __init__(self, last_exists: BBox, dists_between_last_exists: Dict[BBox, float]):
-        self.last_exists = last_exists
-        self.dists_between_last_exists = dists_between_last_exists
+    @staticmethod
+    def spin():
+        """
+        Call rospy.spin to spin the node
+        """
+        rospy.spin()
+
+    @staticmethod
+    def wait_for_msg(topic, data_class):
+        """
+        You can use this method for waiting a msg with info coming out
+
+        Args:
+            topic: The topic you want to wait for
+            data_class:
+
+        Returns: None
+
+        """
+        rospy.loginfo(f'Waiting response from {topic}')
+        rospy.wait_for_message(topic, data_class)
+        rospy.loginfo(f'{topic}: Ok')

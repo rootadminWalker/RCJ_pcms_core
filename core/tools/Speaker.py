@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 MIT License
 
@@ -24,44 +23,25 @@ SOFTWARE.
 
 """
 
-from abc import abstractmethod
-from typing import Any, List
-import numpy as np
-
 import rospy
+from mr_voice.srv import SpeakerSrv
+from std_msgs.msg import String
+
+from .Abstract import Tools
 
 
-class ModelInput:
-    @abstractmethod
-    def preprocess_to(self, input_data) -> Any:
-        return input_data
+class Speaker(Tools):
+    def __init__(self, speaker_topic='/speaker/say', speaker_srv='/speaker/text'):
+        super()._check_status()
+        self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
+        self.speaker_pub = rospy.Publisher(
+            speaker_topic,
+            String,
+            queue_size=1
+        )
 
-    @abstractmethod
-    def rollback(self, blob) -> np.array:
-        return blob
-
-
-class Outputs:
-    @abstractmethod
-    def process_outputs(self, outputs: Any) -> Any:
-        return outputs
-
-
-class Detector:
-    def __init__(
-            self,
-            detector: Any,
-            image_processor: ModelInput,
-            output_processor: Outputs,
-            need_blob=False
-    ):
-        self.detector = detector
-        self.image_processor = image_processor
-        self.output_processor = output_processor
-        self.need_blob = need_blob
-
-        self.blob = None
-
-    @abstractmethod
-    def detect(self, image) -> Any:
-        pass
+    def say(self, text, wait_until_end=False):
+        if wait_until_end:
+            self.speaker_srv(text)
+        else:
+            self.speaker_pub.publish(text)
