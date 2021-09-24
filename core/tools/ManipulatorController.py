@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+
 import rospy
 from open_manipulator_msgs.srv import SetKinematicsPose, SetJointPosition, SetKinematicsPoseRequest, \
     SetJointPositionRequest
