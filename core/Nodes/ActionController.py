@@ -33,7 +33,7 @@ from home_robot_msgs.msg import CommandData
 from rospkg import RosPack
 from std_msgs.msg import String
 
-from ..base_classes import NodeProgram
+from .Node import NodeProgram
 
 
 class ActionController(NodeProgram):
