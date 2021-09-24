@@ -1,11 +1,6 @@
-import warnings
-
 from .Chassis import Chassis
 from .OpenPose import OpenPose
 from .PIDController import PIDController
-try:
-    from .ManipulatorController import ManipulatorController
-except ModuleNotFoundError:
-    warnings.warn("Manipulator Controller was unsupported here")
+from .ManipulatorController import ManipulatorController
 from .Speaker import Speaker
 from .SLAMController import SLAMController

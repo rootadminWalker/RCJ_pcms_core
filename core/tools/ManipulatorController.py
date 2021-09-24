@@ -22,10 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+import warnings
 
 import rospy
-from open_manipulator_msgs.srv import SetKinematicsPose, SetJointPosition, SetKinematicsPoseRequest, \
-    SetJointPositionRequest
+try:
+    from open_manipulator_msgs.srv import SetKinematicsPose, SetJointPosition, SetKinematicsPoseRequest, \
+        SetJointPositionRequest
+except ModuleNotFoundError:
+    warnings.warn("This module was currently unavailable in your machine, calling this will raise an traceback")
 
 from .Abstract import Tools
 
