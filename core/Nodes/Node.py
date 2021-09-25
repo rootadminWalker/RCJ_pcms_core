@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any
 
 import rospy
@@ -38,9 +38,12 @@ class NodeProgram:
         pass
 
 
-class Node:
+class Node(ABC):
+    ROS_RATE = 35
+
     def __init__(self, name, anonymous=False):
         rospy.init_node(name, anonymous=anonymous)
+        self.rate = rospy.Rate(Node.ROS_RATE)
 
     @abstractmethod
     def main(self):
