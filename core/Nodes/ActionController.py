@@ -37,6 +37,7 @@ from .Node import NodeProgram
 
 
 class ActionController(NodeProgram):
+    # TODO: Combine this program with ActionControllerNode
     BASE = RosPack().get_path('rcj_pcms_base')
 
     def __init__(
