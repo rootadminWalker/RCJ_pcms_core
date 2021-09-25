@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -30,7 +31,10 @@ import rospy
 
 
 class NodeProgram:
+    # TODO: Deprecate this after ActionController was merged
     def __init__(self, node_id):
+        warnings.warn('This will be deprecated after ActionController was merged with ActionControllerNode',
+                      DeprecationWarning)
         self.id = node_id
 
     @abstractmethod
@@ -47,12 +51,17 @@ class Node(ABC):
 
     @abstractmethod
     def main(self):
+        """
+        Override this method to put your main loop inside it
+        Returns:
+
+        """
         pass
 
     @abstractmethod
     def reset(self):
         """
-        This method will reset every values in the Node
+        Override this method will reset every values in the Node
         """
         pass
 
