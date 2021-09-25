@@ -39,6 +39,9 @@ class NodeProgram:
 
 
 class Node:
+    def __init__(self, name, anonymous=False):
+        rospy.init_node(name, anonymous=anonymous)
+
     @abstractmethod
     def main(self):
         pass
