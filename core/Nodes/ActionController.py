@@ -25,6 +25,7 @@ SOFTWARE.
 """
 import json
 import subprocess
+import warnings
 from os.path import join
 from typing import Any
 
@@ -36,8 +37,10 @@ from std_msgs.msg import String
 from .Node import NodeProgram
 
 
+warnings.warn("This will be deprecated before 30/09")
+
+
 class ActionController(NodeProgram):
-    # TODO: Combine this program with ActionControllerNode
     BASE = RosPack().get_path('rcj_pcms_base')
 
     def __init__(
