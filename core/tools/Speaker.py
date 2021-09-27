@@ -28,11 +28,14 @@ from mr_voice.srv import SpeakerSrv
 from std_msgs.msg import String
 
 from .Abstract import Tools
+from .FacialDisplayController import FacialDisplayController
 
 
 class Speaker(Tools):
     def __init__(self, speaker_topic='/speaker/say', speaker_srv='/speaker/text'):
         super()._check_status()
+
+        self.facial_controller = FacialDisplayController()
         self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
         self.speaker_pub = rospy.Publisher(
             speaker_topic,
@@ -42,6 +45,8 @@ class Speaker(Tools):
 
     def say(self, text):
         self.speaker_pub.publish(text)
+        self.facial_controller.change_emotion(text, 'happy-2')
 
     def say_until_end(self, text):
         self.speaker_srv(text)
+        self.facial_controller.change_emotion(text, 'happy-2')
