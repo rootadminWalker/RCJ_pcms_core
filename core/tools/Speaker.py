@@ -40,8 +40,8 @@ class Speaker(Tools):
             queue_size=1
         )
 
-    def say(self, text, wait_until_end=False):
-        if wait_until_end:
-            self.speaker_srv(text)
-        else:
-            self.speaker_pub.publish(text)
+    def say(self, text):
+        self.speaker_pub.publish(text)
+
+    def say_until_end(self, text):
+        self.speaker_srv(text)
