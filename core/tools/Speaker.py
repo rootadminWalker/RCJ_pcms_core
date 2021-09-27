@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+import warnings
 
 import rospy
 from mr_voice.srv import SpeakerSrv
@@ -32,11 +33,20 @@ from .FacialDisplayController import FacialDisplayController
 
 
 class Speaker(Tools):
+    SPEAKER_SRV_TIMEOUT = 6
+
     def __init__(self, speaker_topic='/speaker/say', speaker_srv='/speaker/text'):
         super()._check_status()
 
         self.facial_controller = FacialDisplayController()
-        self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
+        try:
+            rospy.wait_for_service(speaker_srv, timeout=Speaker.SPEAKER_SRV_TIMEOUT)
+            self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
+        except rospy.exceptions.ROSException:
+            warnings.warn(
+                "Currently service speaker wasn't available, calling say_until_end will do nothing")
+            self.speaker_srv = lambda x: x
+
         self.speaker_pub = rospy.Publisher(
             speaker_topic,
             String,
