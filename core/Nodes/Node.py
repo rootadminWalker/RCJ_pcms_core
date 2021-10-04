@@ -46,6 +46,7 @@ class Node(ABC):
     ROS_RATE = 35
 
     def __init__(self, name, anonymous=False):
+        self.name = name
         rospy.init_node(name, anonymous=anonymous)
         self.rate = rospy.Rate(Node.ROS_RATE)
 
