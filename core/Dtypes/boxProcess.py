@@ -25,16 +25,19 @@ SOFTWARE.
 
 """
 
-from math import sqrt
 import warnings
+from math import sqrt
+
 import cv2 as cv
+from cv_bridge import CvBridge
+
 try:
     import dlib
 except ImportError:
     warnings.warn('Dlib rectangle feature will be disabled', ImportWarning)
 
 import numpy as np
-from home_robot_msgs.msg import ObjectBox
+from home_robot_msgs.msg import ObjectBox, ObjectBoxes
 
 
 class BBox:
@@ -132,7 +135,7 @@ class BBox:
     ):
         self.label = label
         self.coordinates = coordinates
-        self.padding = padding
+        # self.padding = padding
         self.score = score
         self.model = model
 
@@ -151,7 +154,7 @@ class BBox:
             self.y2 = y2
 
         if shape is not None and padding is not None:
-            self.padding_box = self.__calc_padding(shape)
+            self.padding_box = self.generate_padding_box(padding, shape)
 
         self.area = self.__calc_area()
         self.centroid = self.__calc_centroid()
@@ -190,19 +193,19 @@ class BBox:
         self.area = (self.y2 - self.y1) * (self.x2 - self.x1)
         return self.area
 
-    def __calc_padding(self, shape):
-        px1 = self.x1 - self.padding[0]
-        py1 = self.y1 - self.padding[1]
-        px2 = self.x2 + self.padding[0]
-        py2 = self.y2 + self.padding[1]
+    def generate_padding_box(self, padding, shape):
+        px1 = self.x1 - padding[0]
+        py1 = self.y1 - padding[1]
+        px2 = self.x2 + padding[0]
+        py2 = self.y2 + padding[1]
 
-        self.padding_box = {
+        padding_box_poses = {
             'x1': px1 if px1 > 0 else 0,
             'y1': py1 if py1 > 0 else 0,
             'x2': px2 if px2 < shape[1] else shape[1],
             'y2': py2 if py2 < shape[0] else shape[0]
         }
-        return BBox(coordinates=self.padding_box)
+        return BBox(coordinates=padding_box_poses)
 
     def is_inBox(self, box2):
         isX1 = self.x1 - box2.x1 >= 0
@@ -235,7 +238,7 @@ class BBox:
             cv.LINE_AA
         )
 
-    def bb_iou_score(self, boxB):
+    def iou_score_with(self, boxB):
         # determine the (x, y)-coordinates of the intersection rectangle
         xA = max(self.x1, boxB.x1)
         yA = max(self.y1, boxB.y1)
@@ -276,14 +279,31 @@ class BBox:
         image = image[self.y1:self.y2, self.x1:self.x2, :].copy()
         return image
 
-    def serialize_ros(self):
-        self.serialize_msg.x1 = self.x1
-        self.serialize_msg.y1 = self.y1
-        self.serialize_msg.x2 = self.x2
-        self.serialize_msg.y2 = self.y2
+    def serialize_as_ObjectBox(self):
+        serialize_msg = ObjectBox()
+        serialize_msg.x1 = self.x1
+        serialize_msg.y1 = self.y1
+        serialize_msg.x2 = self.x2
+        serialize_msg.y2 = self.y2
 
-        self.serialize_msg.model = self.model
-        self.serialize_msg.score = self.score
-        self.serialize_msg.label = self.label
+        serialize_msg.model = self.model
+        serialize_msg.score = self.score
+        serialize_msg.label = self.label
 
-        return self.serialize_msg
+        return serialize_msg
+
+    @staticmethod
+    def from_ObjectBox(object_box: ObjectBox):
+        compressed_source_img = object_box.source_img
+        source_img = CvBridge().compressed_imgmsg_to_cv2(compressed_source_img)
+
+        return BBox(object_box.x1, object_box.y1, object_box.x2, object_box.y2,
+                    label=object_box.label.strip(), score=object_box.score,
+                    source_img=source_img)
+
+    @staticmethod
+    def from_ObjectBoxes(object_boxes: ObjectBoxes):
+        boxes = []
+        for object_box in object_boxes.boxes:
+            boxes.append(BBox.from_ObjectBox(object_box))
+        return boxes
