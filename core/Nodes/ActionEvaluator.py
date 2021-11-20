@@ -86,7 +86,9 @@ class ActionEvaluator(Node):
     def start_flow(self, next_intents):
         req = StartFlowRequest()
         req.next_intents = next_intents
-        self.__start_flow(req)
+        result = self.__start_flow(req)
+        if not result:
+            raise ReferenceError('A flow has started already')
 
     def main(self):
         pass
