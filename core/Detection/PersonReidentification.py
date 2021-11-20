@@ -28,10 +28,10 @@ import numpy as np
 
 
 class PersonReidentification:
-    def __init__(self, person_extractor: cv.dnn_Net):
-        self.person_extractor = person_extractor
+    def __init__(self, bin_path, xml_path):
+        self.person_extractor = cv.dnn.readNet(bin_path, xml_path)
 
-    def parse_descriptor(self, person_image, crop=False) -> np.array:
+    def extract_descriptor(self, person_image, crop=False) -> np.array:
         blob = cv.dnn.blobFromImage(
             person_image,
             size=(128, 256),
@@ -44,3 +44,7 @@ class PersonReidentification:
         self.person_extractor.setInput(blob)
         descriptor = self.person_extractor.forward()
         return descriptor
+
+    @staticmethod
+    def compare_descriptors(desc1, desc2):
+        return np.dot(desc1, desc2) / (np.linalg.norm(desc1) * np.linalg.norm(desc2))
