@@ -294,8 +294,11 @@ class BBox:
 
     @staticmethod
     def from_ObjectBox(object_box: ObjectBox):
-        compressed_source_img = object_box.source_img
-        source_img = CvBridge().compressed_imgmsg_to_cv2(compressed_source_img)
+        try:
+            compressed_source_img = object_box.source_img
+            source_img = CvBridge().compressed_imgmsg_to_cv2(compressed_source_img)
+        except cv.error:
+            source_img = None
 
         return BBox(object_box.x1, object_box.y1, object_box.x2, object_box.y2,
                     label=object_box.label.strip(), score=object_box.score,
