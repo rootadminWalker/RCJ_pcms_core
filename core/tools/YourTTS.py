@@ -22,14 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-
-"""
-YourTTS implementation instance, download the model and the configs from:
-https://drive.google.com/drive/folders/12_Vmsbp7v5oVaqIRcfnWe1BLcJHLzkZz?usp=sharing
-
-Clone TTS package with: git clone https://github.com/Edresson/Coqui-TTS -b multilingual-torchaudio-SE TTS
-and run pip inside it
-"""
 from os import path
 
 import librosa
@@ -47,6 +39,17 @@ except ImportError:
 from TTS.tts.models import setup_model
 from TTS.config import load_config
 from TTS.tts.models.vits import *
+
+"""
+YourTTS implementation instance, download the model and the configs from:
+https://drive.google.com/drive/folders/12_Vmsbp7v5oVaqIRcfnWe1BLcJHLzkZz?usp=sharing
+
+Clone TTS package with: git clone https://github.com/Edresson/Coqui-TTS -b multilingual-torchaudio-SE TTS
+and run pip inside it
+
+For some example reference audios, you can view here:
+https://drive.google.com/drive/folders/161ZQmwZbgByXQt4PEbRjSLhtOZe2oUXs?usp=sharing
+"""
 
 
 class YourTTS(Tools):
