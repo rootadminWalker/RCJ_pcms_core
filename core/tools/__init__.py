@@ -5,3 +5,4 @@ from .ManipulatorController import ManipulatorController
 from .Speaker import Speaker
 from .SLAMController import SLAMController
 from .SmoothAcceleration import SmoothAcceleration
+from .YourTTS import YourTTS
