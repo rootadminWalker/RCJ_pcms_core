@@ -22,6 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+
+"""
+YourTTS implementation instance, download the model and the configs from:
+https://drive.google.com/drive/folders/12_Vmsbp7v5oVaqIRcfnWe1BLcJHLzkZz?usp=sharing
+
+Clone TTS package with: git clone https://github.com/Edresson/Coqui-TTS -b multilingual-torchaudio-SE TTS
+and run pip inside it
+"""
 from os import path
 
 import librosa
