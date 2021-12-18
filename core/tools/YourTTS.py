@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-from os import path
+import os
 
 import librosa
 import torch.cuda
@@ -72,7 +72,8 @@ class YourTTS(Tools):
             - speaker.json
         Args:
             model_directory_path: The path to the directory with yourtts models stored.
-            reference_files: The reference audios in wav for voice imitation
+            reference_files: The reference audios in wav for voice imitation. If it's a directory, the instance will
+                            parse every wav file inside it; If it's a file, then it will just parse it
             use_cuda: Use cuda if you want (Not recommended)
         """
 
@@ -83,14 +84,21 @@ class YourTTS(Tools):
         self.audio_processor = AudioProcessor(**self.C.audio)
 
         SE_speaker_manager = self.__load_speaker_encoder(model_directory_path, use_cuda)
-        self.reference_emb = SE_speaker_manager.compute_d_vector_from_clip(reference_files)
+        if os.path.isdir(reference_files):
+            self.__reference_files = [os.path.join(reference_files, wav) for wav in os.listdir(reference_files)]
+        elif reference_files.endswith('.wav'):
+            self.__reference_files = [reference_files]
+        else:
+            raise ValueError(f"Your path {reference_files} is neither a directory or a wav audio file")
+
+        self.reference_emb = SE_speaker_manager.compute_d_vector_from_clip(self.__reference_files)
 
     @staticmethod
     def __load_base_model(model_directory_path, use_cuda):
-        model_path = path.join(model_directory_path, YourTTS.BEST_MODEL)
-        config_path = path.join(model_directory_path, YourTTS.CONFIG)
-        tts_languages = path.join(model_directory_path, YourTTS.LANGUAGE_IDS)
-        tts_speakers = path.join(model_directory_path, YourTTS.SPEAKERS)
+        model_path = os.path.join(model_directory_path, YourTTS.BEST_MODEL)
+        config_path = os.path.join(model_directory_path, YourTTS.CONFIG)
+        tts_languages = os.path.join(model_directory_path, YourTTS.LANGUAGE_IDS)
+        tts_speakers = os.path.join(model_directory_path, YourTTS.SPEAKERS)
 
         C = load_config(config_path)
 
@@ -118,8 +126,8 @@ class YourTTS(Tools):
 
     @staticmethod
     def __load_speaker_encoder(model_directory_path, use_cuda):
-        checkpoint_se_path = path.join(model_directory_path, YourTTS.SE_CHECKPOINT)
-        config_se_path = path.join(model_directory_path, YourTTS.CONFIG_SE)
+        checkpoint_se_path = os.path.join(model_directory_path, YourTTS.SE_CHECKPOINT)
+        config_se_path = os.path.join(model_directory_path, YourTTS.CONFIG_SE)
 
         # synthesize voice
         SE_speaker_manager = SpeakerManager(encoder_model_path=checkpoint_se_path, encoder_config_path=config_se_path,
