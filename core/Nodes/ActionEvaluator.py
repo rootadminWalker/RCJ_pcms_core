@@ -41,21 +41,21 @@ def dummy_callback(intent, slots, raw_text, flowed_intents):
 
 class ActionEvaluator(Node):
     def __init__(self):
-        super(ActionEvaluator, self).__init__('snips_intent_ac', anonymous=False)
+        super(ActionEvaluator, self).__init__('intent_ac', anonymous=False)
         # The user must initialize the callback map, or else the program won't start
         if 'intent2callback' not in self.__dict__:
             raise AttributeError('You must define the callbacks corresponding to the intents')
 
         # Call the start and stop flow service
-        self.__start_flow = rospy.ServiceProxy('/snips_intent_manager/start_session', StartSession)
-        self.stop_flow = rospy.ServiceProxy('/snips_intent_manager/stop_session', Trigger)
+        self.__start_flow = rospy.ServiceProxy('/intent_manager/start_session', StartSession)
+        self.stop_flow = rospy.ServiceProxy('/intent_manager/stop_session', Trigger)
 
         # Initialize the speaker
         self.speaker = Speaker()
 
         # Initialize the action server
         self.action_controller_server = actionlib.SimpleActionServer(
-            'snips_intent_ac',
+            'intent_ac',
             IntentACControllerAction,
             execute_cb=self.message_cb,
             auto_start=False
