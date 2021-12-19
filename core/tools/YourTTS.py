@@ -71,9 +71,9 @@ class YourTTS(Tools):
             - SE_checkpoint.pth.tar
             - speaker.json
         Args:
-            model_directory_path: The path to the directory with yourtts models stored.
-            reference_files: The reference audios in wav for voice imitation. If it's a directory, the instance will
-                            parse every wav file inside it; If it's a file, then it will just parse it
+            model_directory_path: Path to the directory you stored yourtts's models. Use absolute path if necessary
+            reference_files: Reference audios in wav for YourTTS to imitate your voice. If you have multiple,
+                             specify the directory that stored it. If you have only one, just give that one’s path
             use_cuda: Use cuda if you want (Not recommended)
         """
 
@@ -138,11 +138,11 @@ class YourTTS(Tools):
         """
         You can call this method to speak it out, remember don't delete or modify the file /tmp/voice.wav
         Args:
-            text: The text you want the speaker to speak
+            text: The text you want the YourTTS to speak
             length_scale: Default is 1.1. scaler for the duration predictor. The larger it is, the slower the speech.
             inference_noise_scale: Default is 0.3, defines the noise variance applied to the random z vector at inference.
             inference_noise_scale_dp: Default is 0.3. defines the noise variance applied to the duration predictor z vector at inference.
-            language_id: Default is 0, english. You won't use others, will you? (If so, check is in language_ids.json)
+            language_id: Default is 0, representing english. You won't use others, will you? (If so, check language_ids.json)
 
         Returns:
 
