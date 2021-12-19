@@ -27,8 +27,8 @@ import json
 
 import actionlib
 import rospy
-from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal, IntentACControllerAction
-from home_robot_msgs.srv import StartFlowRequest, StartFlow
+from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal, IntentACControllerAction, VoiceSession
+from home_robot_msgs.srv import StartFlowRequest, StartSession
 from std_srvs.srv import Trigger
 
 from core.Nodes import Node
@@ -47,8 +47,8 @@ class ActionEvaluator(Node):
             raise AttributeError('You must define the callbacks corresponding to the intents')
 
         # Call the start and stop flow service
-        self.__start_flow = rospy.ServiceProxy('/snips_intent_manager/start_flow', StartFlow)
-        self.stop_flow = rospy.ServiceProxy('/snips_intent_manager/stop_flow', Trigger)
+        self.__start_flow = rospy.ServiceProxy('/snips_intent_manager/start_session', StartSession)
+        self.stop_flow = rospy.ServiceProxy('/snips_intent_manager/stop_session', Trigger)
 
         # Initialize the speaker
         self.speaker = Speaker()
@@ -83,7 +83,7 @@ class ActionEvaluator(Node):
         result = IntentACControllerResult(True)
         self.action_controller_server.set_succeeded(result)
 
-    def start_flow(self, next_intents):
+    def start_session(self, next_intents):
         req = StartFlowRequest()
         req.next_intents = next_intents
         result = self.__start_flow(req)
