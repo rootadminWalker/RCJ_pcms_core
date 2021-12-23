@@ -134,12 +134,12 @@ class YourTTS(Tools):
                                             use_cuda=use_cuda)
         return SE_speaker_manager
 
-    def say(self, text, length_scale=1.1, inference_noise_scale=0.3, inference_noise_scale_dp=0.3, language_id=0):
+    def say(self, text, length_scale=1, inference_noise_scale=0.3, inference_noise_scale_dp=0.3, language_id=0):
         """
         You can call this method to speak it out, remember don't delete or modify the file /tmp/voice.wav
         Args:
             text: The text you want the YourTTS to speak
-            length_scale: Default is 1.1. scaler for the duration predictor. The larger it is, the slower the speech.
+            length_scale: Default is 1. scaler for the duration predictor. The larger it is, the slower the speech.
             inference_noise_scale: Default is 0.3, defines the noise variance applied to the random z vector at inference.
             inference_noise_scale_dp: Default is 0.3. defines the noise variance applied to the duration predictor z vector at inference.
             language_id: Default is 0, representing english. You won't use others, will you? (If so, check language_ids.json)
