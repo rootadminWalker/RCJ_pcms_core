@@ -25,7 +25,7 @@ SOFTWARE.
 import warnings
 
 import rospy
-from mr_voice.srv import SpeakerSrv
+from home_robot_msgs.srv import SpeakerSrv
 from std_msgs.msg import String
 
 from .Abstract import Tools
