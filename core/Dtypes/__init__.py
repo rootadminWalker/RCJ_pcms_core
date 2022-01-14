@@ -1,2 +1,6 @@
+# from .PoseProcess import *
+from .SnipsProcess import *
 from .boxProcess import *
-from .PoseProcess import *
+
+# Subscribe Intent
+SubscribeIntent = namedtuple('SubscribeIntent', ['callback', 'response'])

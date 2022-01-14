@@ -24,11 +24,12 @@ SOFTWARE.
 """
 import json
 from abc import ABC, abstractmethod
-from collections import namedtuple
 
 import rospy
 from snips_nlu import SnipsNLUEngine
 from snips_nlu.default_configs import CONFIG_EN
+
+from core.Dtypes import ParseResult
 
 
 class KeywordParser(ABC):
@@ -86,10 +87,6 @@ class NormalKeywordParser(KeywordParser):
                 return True
         else:
             return False
-
-
-# Snips engine parse result
-ParseResult = namedtuple('ParseResult', 'engine_id user_intent intent_probability parsed_slots')
 
 
 class HeySnipsNLUParser(KeywordParser):
