@@ -31,6 +31,7 @@ from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal
 from home_robot_msgs.srv import Session, SessionRequest
 from std_srvs.srv import Trigger
 
+from core.Dtypes import SubscribeIntent
 from core.Nodes import Node
 from core.tools import Speaker
 
@@ -42,9 +43,11 @@ def dummy_callback(intent, slots, raw_text, session):
 class ActionEvaluator(Node):
     def __init__(self):
         super(ActionEvaluator, self).__init__('intent_ac', anonymous=False)
-        # The user must initialize the callback map, or else the program won't start
-        if 'intent2callback' not in self.__dict__:
-            raise AttributeError('You must define the callbacks corresponding to the intents')
+        # # The user must initialize the callback map, or else the program won't start
+        # if 'intent2callback' not in self.__dict__:
+        #     raise AttributeError('You must define the callbacks corresponding to the intents')
+
+        self.intent2callback = {}
 
         # Call the start and stop flow service
         self.__start_session = rospy.ServiceProxy('/intent_manager/start_session', Session)
@@ -53,6 +56,8 @@ class ActionEvaluator(Node):
 
         # Initialize the speaker
         self.speaker = Speaker()
+
+        self.current_intent = ''
 
         # Initialize the action server
         self.action_controller_server = actionlib.SimpleActionServer(
@@ -65,6 +70,9 @@ class ActionEvaluator(Node):
 
         self.main()
 
+    def subscribe_intent(self, intent, callback, response):
+        self.intent2callback[intent] = SubscribeIntent(callback, response)
+
     @staticmethod
     def on_session():
         return rospy.get_param('/intent_manager/on_session')
@@ -72,7 +80,7 @@ class ActionEvaluator(Node):
     def message_cb(self, goal: IntentACControllerGoal):
         # TODO async the callback function for preempt checking
         # Parse the data
-        intent = goal.intent
+        self.current_intent = goal.intent
         slots = json.loads(goal.slots)
         raw_text = goal.raw_text
         session = None
@@ -80,15 +88,18 @@ class ActionEvaluator(Node):
             session = goal.session
 
         # Execute the callbacks
-        if intent not in self.intent2callback:
-            rospy.logerr(f"Intent {intent}'s callback doesn't exist, doing nothing")
+        if self.current_intent not in self.intent2callback:
+            rospy.logerr(f"Intent {self.current_intent}'s callback doesn't exist, doing nothing")
             callback = dummy_callback
         else:
-            callback = self.intent2callback[intent]
+            resp_and_callback = self.intent2callback[self.current_intent]
+            self.speaker.say_until_end(resp_and_callback.response)
+            callback = resp_and_callback.callback
 
-        callback(intent, slots, raw_text, session)
+        callback(self.current_intent, slots, raw_text, session)
 
         # Set the callback was executed successfully
+        self.current_intent = ''
         result = IntentACControllerResult(True)
         self.action_controller_server.set_succeeded(result)
 
@@ -97,6 +108,7 @@ class ActionEvaluator(Node):
             raise RuntimeError('A session has started already')
 
         req = SessionRequest()
+        req.session_data.started_intent = self.current_intent
         req.session_data.possible_next_intents = next_intents
         req.session_data.custom_data = json.dumps(custom_data)
         self.__start_session(req)
@@ -107,7 +119,8 @@ class ActionEvaluator(Node):
 
         req = SessionRequest()
         req.session_data.possible_next_intents = next_intents
-        req.session_data.custom_data = json.dumps(custom_data)
+        if custom_data is not None:
+            req.session_data.custom_data = json.dumps(custom_data)
         self.__continue_session(req)
 
     def stop_session(self):
