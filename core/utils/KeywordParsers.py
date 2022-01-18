@@ -29,7 +29,7 @@ import rospy
 from snips_nlu import SnipsNLUEngine
 from snips_nlu.default_configs import CONFIG_EN
 
-from core.Dtypes import ParseResult
+from core.Dtypes import ParseResult, Slots
 
 
 class KeywordParser(ABC):
@@ -123,11 +123,11 @@ class HeySnipsNLUParser(KeywordParser):
         if key(full_data[0]):
             return full_data[0]
 
-        return ParseResult('', None, 0.0, [])
+        return ParseResult('', None, 0.0, Slots([]))
 
     @staticmethod
     def __intent_condition_valid(parse_data: ParseResult):
-        return parse_data.user_intent is not None and \
+        return parse_data.intent is not None and \
                parse_data.intent_probability >= HeySnipsNLUParser.INTENT_MAX_PROBABILITY
 
     def parse_with_engine_id(self, text, engine_id):
@@ -143,4 +143,4 @@ class HeySnipsNLUParser(KeywordParser):
     def parse_full_data(self, text):
         for engine_id in self.nlu_engines.keys():
             _, user_intent, intent_probability, parsed_slots = self.parse_with_engine_id(text, engine_id)
-            yield ParseResult(engine_id, user_intent, intent_probability, parsed_slots)
+            yield ParseResult(engine_id, user_intent, intent_probability, Slots(parsed_slots))
