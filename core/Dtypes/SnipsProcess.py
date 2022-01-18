@@ -26,12 +26,14 @@ SOFTWARE.
 """
 
 # Snips engine parse result
+import json
 from collections import namedtuple
 
-ParseResult = namedtuple('ParseResult', 'engine_id user_intent intent_probability parsed_slots')
+ParseResult = namedtuple('ParseResult', 'engine_id intent intent_probability slots')
 
 # Intent config
 IntentConfig = namedtuple('IntentConfig', ['allow_preempt', 'required_slots'])
+RequiredSlot = namedtuple('SlotConfig', ['slot_name', 'confirm_response'])
 
 SlotRange = namedtuple('SlotRange', ['start', 'end'])
 SlotValue = namedtuple('SlotValue', ['rawValue', 'value', 'kind'])
@@ -39,13 +41,12 @@ Slot = namedtuple('Slot', ['name', 'range', 'value', 'entity'])
 
 
 class Slots:
-    def __init__(self, slots_dict):
-        self.raw_slots = slots_dict
+    def __init__(self, raw_slots):
+        self.raw_slots = raw_slots
         self.slots = []
         for slot in self.raw_slots:
             slot_range = SlotRange(slot['range']['start'], slot['range']['end'])
             slot_value = SlotValue(slot['rawValue'], slot['value']['value'], slot['value']['kind'])
-
             self.slots.append(Slot(slot['slotName'], slot_range, slot_value, slot['entity']))
 
     def slot_exist(self, name):
@@ -53,3 +54,29 @@ class Slots:
             if name == slot.name:
                 return True
         return False
+
+
+class IntentConfigs:
+    INTENT_DEFAULT_CONFIG = IntentConfig(allow_preempt=False, required_slots=[])
+
+    def __init__(self, config_path):
+        with open(config_path) as f:
+            intent_configs = json.load(f)
+        for intent_name, json_data in intent_configs.items():
+            required_slots = []
+            for req_slot_name, req_configs in json_data['required_slots'].items():
+                required_slot = RequiredSlot(req_slot_name, req_configs['confirm_response'])
+                required_slots.append(required_slot)
+
+            self.__dict__[intent_name] = IntentConfig(json_data['allow_preempt'], required_slots)
+
+        self.__dict__['NotRecognized'] = IntentConfigs.INTENT_DEFAULT_CONFIG
+
+    def slots_insufficient(self, target_intent, slots):
+        for required_slot in self.__dict__[target_intent].required_slots:
+            if not slots.slot_exist(required_slot.slot_name):
+                return True, required_slot.confirm_response
+        return False, ''
+
+    def __getitem__(self, item):
+        return self.__dict__[item]
