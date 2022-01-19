@@ -75,8 +75,8 @@ class IntentConfigs:
     def slots_insufficient(self, target_intent, slots):
         for required_slot in self.__dict__[target_intent].required_slots:
             if not slots.slot_exist(required_slot.slot_name):
-                return True, required_slot.confirm_response
-        return False, ''
+                return True, required_slot
+        return False, None
 
     def __getitem__(self, item):
         return self.__dict__[item]
