@@ -31,7 +31,7 @@ from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal
 from home_robot_msgs.srv import Session, SessionRequest
 from std_srvs.srv import Trigger
 
-from core.Dtypes import SubscribeIntent
+from core.Dtypes import SubscribeIntent, Slots, IntentConfigs
 from core.Nodes import Node
 from core.tools import Speaker
 
@@ -43,9 +43,13 @@ def dummy_callback(intent, slots, raw_text, session):
 class ActionEvaluator(Node):
     def __init__(self):
         super(ActionEvaluator, self).__init__('intent_ac', anonymous=False)
-        # # The user must initialize the callback map, or else the program won't start
-        # if 'intent2callback' not in self.__dict__:
-        #     raise AttributeError('You must define the callbacks corresponding to the intents')
+
+        # Load the intent configs
+        config_file = rospy.get_param(
+            '~config_file',
+            '/home/root_walker/workspace/ROS_projects/src/The_Essense_of_the_Grey_Region/config/ActionController/SnipsIntentConfigs/restaurant.json'
+        )
+        self.intent_configs = IntentConfigs(config_file)
 
         self.intent2callback = {}
 
@@ -73,6 +77,16 @@ class ActionEvaluator(Node):
     def subscribe_intent(self, intent, callback, response):
         self.intent2callback[intent] = SubscribeIntent(callback, response)
 
+    def insufficient_callback(self, slots, required_slot):
+        self.speaker.say_until_end(required_slot.confirm_response)
+        if not self.on_session():
+            self.start_session(
+                next_intents=[self.current_intent],
+                custom_data=json.dumps(slots.raw_slots)
+            )
+        else:
+            self.continue_session(next_intents=[self.current_intent])
+
     @staticmethod
     def on_session():
         return rospy.get_param('/intent_manager/on_session')
@@ -81,7 +95,7 @@ class ActionEvaluator(Node):
         # TODO async the callback function for preempt checking
         # Parse the data
         self.current_intent = goal.intent
-        slots = json.loads(goal.slots)
+        slots = Slots(json.loads(goal.slots))
         raw_text = goal.raw_text
         session = None
         if self.on_session():
@@ -96,7 +110,22 @@ class ActionEvaluator(Node):
             self.speaker.say_until_end(resp_and_callback.response)
             callback = resp_and_callback.callback
 
-        callback(self.current_intent, slots, raw_text, session)
+        # Get intent configs from the config file
+        try:
+            intent_config = self.intent_configs[self.current_intent]
+        except KeyError:
+            intent_config = IntentConfigs.INTENT_DEFAULT_CONFIG
+
+        # check if the slots are sufficient for executing
+        slots_insufficient, required_slot = self.intent_configs.slots_insufficient(self.current_intent, slots)
+        if slots_insufficient:
+            self.insufficient_callback(slots, required_slot)
+        else:
+            try:
+                self.stop_session()
+            except RuntimeError:
+                pass
+            callback(self.current_intent, slots, raw_text, session)
 
         # Set the callback was executed successfully
         self.current_intent = ''
