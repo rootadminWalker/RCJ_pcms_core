@@ -61,6 +61,7 @@ class ActionEvaluator(Node):
         # Initialize the speaker
         self.speaker = Speaker()
 
+        # The current intent
         self.current_intent = ''
 
         # Initialize the action server
