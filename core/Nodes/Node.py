@@ -26,9 +26,11 @@ SOFTWARE.
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any
+from rich.console import Console
 
 import rospy
 
+console = Console()
 
 class NodeProgram:
     # TODO: Deprecate this after ActionController was merged
@@ -46,9 +48,14 @@ class Node(ABC):
     ROS_RATE = 35
 
     def __init__(self, name, anonymous=False):
-        self.name = name
-        rospy.init_node(name, anonymous=anonymous)
-        self.rate = rospy.Rate(Node.ROS_RATE)
+        with console.status(f"[magenta] Initializing node /{name}") as status:
+            self.name = name
+            rospy.init_node(name, anonymous=anonymous)
+            console.log("Initialized ROS Node")
+            self.rate = rospy.Rate(Node.ROS_RATE)
+            console.log(f"Initialized ROS rate as {Node.ROS_RATE}")
+
+        console.print(f"[bold green] Node /{name} initialized sucessfully")
 
     @abstractmethod
     def main(self):
