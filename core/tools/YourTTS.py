@@ -31,10 +31,7 @@ from playsound import playsound
 
 from .Abstract import Tools
 
-try:
-    from TTS.utils.audio import AudioProcessor
-except ImportError:
-    from TTS.utils.audio import AudioProcessor
+from TTS.utils.audio import AudioProcessor
 
 from TTS.tts.models import setup_model
 from TTS.config import load_config
