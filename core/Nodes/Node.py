@@ -47,13 +47,26 @@ class NodeProgram:
 class Node(ABC):
     ROS_RATE = 35
 
-    def __init__(self, name, anonymous=False):
+    def __init__(self, name, anonymous=False, default_state='', node_group='~'):
+        """
+        An abstract class for initializing into a ROS node, since ROS uses callbacks and hermes protocol,
+        OOP will be better for variables to cross between different borders of the program
+        Args:
+            name: Name of the node
+            anonymous: Generate a random ID after the node name or not
+            default_state: The default state of the node, if you want a state machine
+            node_group: A group state header of multiple node
+        """
         with console.status(f"[magenta] Initializing node /{name}") as status:
             self.name = name
             rospy.init_node(name, anonymous=anonymous)
             console.log("Initialized ROS Node")
             self.rate = rospy.Rate(Node.ROS_RATE)
             console.log(f"Initialized ROS rate as {Node.ROS_RATE}")
+
+            self.__node_group = node_group
+            self.__state = default_state
+            rospy.set_param(f'{self.__node_group}next_state', self.__state)
 
         console.print(f"[bold green] Node /{name} initialized sucessfully")
 
@@ -95,3 +108,30 @@ class Node(ABC):
         rospy.loginfo(f'Waiting response from {topic}')
         rospy.wait_for_message(topic, data_class)
         rospy.loginfo(f'{topic}: Ok')
+
+    def set_state(self, state: Any):
+        """
+        Set the coming next state
+        Args:
+            state: Must be a base type
+
+        Returns:
+
+        """
+        rospy.set_param(f'{self.__node_group}next_state', state)
+
+    def next_state_to_param(self):
+        """
+        Call this to set the cached state (next_state parameter)
+        Returns:
+
+        """
+        self.__state = rospy.get_param(f'{self.__node_group}next_state')
+
+    def get_state(self) -> Any:
+        """
+        Get the cached state
+        Returns: A base type
+
+        """
+        return self.__state
