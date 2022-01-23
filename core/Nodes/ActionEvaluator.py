@@ -105,13 +105,12 @@ class ActionEvaluator(Node):
     def insufficient_callback(self, slots, required_slot):
         self.speaker.say_until_end(required_slot.confirm_response)
         if not self.on_session():
-            confirm_intent = required_slot.confirm_intent
             self.__start_insufficient_session(
-                next_intents=[self.current_intent, confirm_intent],
+                next_intents=[],
                 custom_data=json.dumps(slots.raw_slots)
             )
         else:
-            self.__continue_insufficient_session(next_intents=[self.current_intent])
+            self.__continue_insufficient_session(next_intents=[])
 
     def message_cb(self, goal: IntentACControllerGoal):
         # TODO async the callback function for preempt checking
@@ -157,12 +156,13 @@ class ActionEvaluator(Node):
         result = IntentACControllerResult(True)
         self.action_controller_server.set_succeeded(result)
 
-    def __start_session_partial(self, next_intents, custom_data=None, max_rounds=1):
+    def __start_session_partial(self, session_type, next_intents, custom_data=None, max_rounds=1):
         if self.on_session():
             raise RuntimeError('A session has started already')
 
         req = SessionRequest()
         req.session_data.started_intent = self.current_intent
+        req.session_data.session_type = session_type
         req.session_data.possible_next_intents = next_intents
         req.session_data.custom_data = json.dumps(custom_data)
         req.session_data.max_rounds = max_rounds
@@ -181,7 +181,7 @@ class ActionEvaluator(Node):
 
     def __start_insufficient_session(self, next_intents, custom_data=None, max_rounds=3):
         self.set_state('INSUFFICIENT')
-        self.__start_session_partial(next_intents, custom_data, max_rounds)
+        self.__start_session_partial('INSUFFICIENT', next_intents, custom_data, max_rounds)
 
     def __continue_insufficient_session(self, next_intents, custom_data=None):
         self.set_state('INSUFFICIENT')
@@ -198,7 +198,7 @@ class ActionEvaluator(Node):
 
         """
         self.set_state('ON_SESSION')
-        self.__start_session_partial(next_intents, custom_data, 1)
+        self.__start_session_partial('NORMAL', next_intents, custom_data, 1)
 
     def continue_session(self, next_intents, custom_data=None):
         """
