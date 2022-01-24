@@ -28,7 +28,7 @@ SOFTWARE.
 # Snips engine parse result
 import json
 from collections import namedtuple
-from typing import Union, Tuple
+from typing import List
 
 ParseResult = namedtuple('ParseResult', 'engine_id intent intent_probability slots')
 
@@ -75,17 +75,18 @@ class IntentConfigs:
 
             self.__dict__[intent_name] = IntentConfig(
                 json_data['allow_preempt'],
-                json_data['max_re-ask'],
+                json_data['max_re_ask'],
                 required_slots
             )
 
         self.__dict__['NotRecognized'] = IntentConfigs.INTENT_DEFAULT_CONFIG
 
-    def slots_insufficient(self, target_intent: str, slots: Slots) -> Tuple[bool, Union[RequiredSlot, None]]:
+    def find_missing_slots(self, target_intent: str, slots: Slots) -> List[RequiredSlot]:
+        missed_slots = []
         for required_slot in self.__dict__[target_intent].required_slots:
             if not slots.slot_exist(required_slot.slot_name):
-                return True, required_slot
-        return False, None
+                missed_slots.append(required_slot)
+        return missed_slots
 
     def __getitem__(self, item):
         return self.__dict__[item]
