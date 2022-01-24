@@ -36,7 +36,7 @@ from core.Nodes import Node
 from core.tools import Speaker
 
 
-def dummy_callback(intent, slots, raw_text, session):
+def dummy_callback(intent, slots, raw_text, session, missed_slots):
     return
 
 
@@ -123,31 +123,18 @@ class ActionEvaluator(Node):
             session = goal.session
 
         # check if the slots are sufficient for executing
-        slots_insufficient, required_slot = self.intent_configs.slots_insufficient(self.current_intent, slots)
-        if slots_insufficient:
-            self.insufficient_callback(slots, required_slot)
+        missed_slots = self.intent_configs.find_missing_slots(self.current_intent, slots)
+
+        # Execute the callbacks
+        if self.current_intent not in self.intent2callback:
+            rospy.logerr(f"Intent {self.current_intent}'s callback doesn't exist, doing nothing")
+            callback = dummy_callback
         else:
-            # If the last state is INSUFFICIENT and it is not NotRecognized (User said unrecognizable things),
-            # the current intent will be the started_intent of the session
-            if self.get_state() == 'INSUFFICIENT' and self.current_intent != 'NotRecognized':
-                self.current_intent = session.started_intent
+            resp_and_callback = self.intent2callback[self.current_intent]
+            self.speaker.say_until_end(resp_and_callback.response)
+            callback = resp_and_callback.callback
 
-            # If the session has stopped already, Then nothing will happen
-            try:
-                self.stop_session()
-            except RuntimeError:
-                pass
-
-            # Execute the callbacks
-            if self.current_intent not in self.intent2callback:
-                rospy.logerr(f"Intent {self.current_intent}'s callback doesn't exist, doing nothing")
-                callback = dummy_callback
-            else:
-                resp_and_callback = self.intent2callback[self.current_intent]
-                self.speaker.say_until_end(resp_and_callback.response)
-                callback = resp_and_callback.callback
-
-            callback(self.current_intent, slots, raw_text, session)
+        callback(self.current_intent, slots, raw_text, session, missed_slots)
 
         self.next_state_to_param()
 
