@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-import json
 import types
 import warnings
 from abc import ABC
@@ -31,11 +30,10 @@ from os import path
 import rospy
 from actionlib_msgs.msg import GoalID
 from cv_bridge import CvBridge
-from geometry_msgs.msg import PoseStamped
 from rospkg import RosPack
 from std_msgs.msg import String
 
-from ..tools import ManipulatorController, Speaker, Chassis, SLAMController
+from ..hardware import ManipulatorController, Speaker, Chassis, SLAMController
 
 
 class MainProgram(ABC):
@@ -61,6 +59,7 @@ class MainProgram(ABC):
     Other:
     self.bridge: CvBridge()
     """
+
     def __init__(self):
         if not rospy.core.is_initialized():
             raise rospy.ROSException('Please initialize first')
