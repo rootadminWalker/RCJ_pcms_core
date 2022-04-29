@@ -26,9 +26,10 @@ SOFTWARE.
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List
-from rich.console import Console
 
 import rospy
+from rich.console import Console
+from std_srvs.srv import Trigger, TriggerResponse
 
 console = Console()
 
@@ -62,6 +63,8 @@ class Node(ABC):
             console.log("Initialized ROS Node")
             self.rate = rospy.Rate(Node.ROS_RATE)
             console.log(f"Initialized ROS rate as {Node.ROS_RATE}")
+            rospy.Service('~reset', Trigger, self.reset)
+            console.log(f"Initialized reset service")
 
         console.print(f"[bold green] Node /{name} initialized sucessfully")
 
@@ -75,11 +78,11 @@ class Node(ABC):
         pass
 
     @abstractmethod
-    def reset(self):
+    def reset(self) -> TriggerResponse:
         """
-        Override this method will reset every values in the Node
+        Override this method to reset your own node by ~reset service
         """
-        pass
+        return TriggerResponse()
 
     @staticmethod
     def spin():
