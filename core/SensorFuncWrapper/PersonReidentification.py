@@ -25,9 +25,10 @@ SOFTWARE.
 """
 import cv2 as cv
 import numpy as np
+from . import SensorFuncWrapper
 
 
-class PersonReidentification:
+class PersonReidentification(SensorFuncWrapper):
     def __init__(self, bin_path, xml_path):
         self.person_extractor = cv.dnn.readNet(bin_path, xml_path)
 
@@ -48,3 +49,6 @@ class PersonReidentification:
     @staticmethod
     def compare_descriptors(desc1, desc2):
         return np.dot(desc1, desc2) / (np.linalg.norm(desc1) * np.linalg.norm(desc2))
+
+    def serialize(self, *args, **kwargs):
+        pass
