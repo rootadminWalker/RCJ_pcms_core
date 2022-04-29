@@ -1,2 +1,2 @@
-from .YOLODetection import DetectBox
-from .PersonReidentification import PersonReidentification
+import warnings
+warnings.warn("deprecated", DeprecationWarning)
