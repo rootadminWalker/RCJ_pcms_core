@@ -29,10 +29,6 @@ import torch.cuda
 from TTS.tts.utils.speakers import SpeakerManager
 from playsound import playsound
 
-from .Abstract import Tools
-
-from TTS.utils.audio import AudioProcessor
-
 from TTS.tts.models import setup_model
 from TTS.config import load_config
 from TTS.tts.models.vits import *
@@ -49,7 +45,7 @@ https://drive.google.com/drive/folders/161ZQmwZbgByXQt4PEbRjSLhtOZe2oUXs?usp=sha
 """
 
 
-class YourTTS(Tools):
+class YourTTS:
     BEST_MODEL = 'best_model.pth.tar'
     CONFIG = 'config.json'
     CONFIG_SE = 'config_se.json'
