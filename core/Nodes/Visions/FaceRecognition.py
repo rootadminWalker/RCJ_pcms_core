@@ -29,8 +29,11 @@ import dlib
 import genpy
 
 from .vision_abstract import VisionNodeProgram
-from ...Dtypes.FaceProcess import FaceUser, FaceUserManager
+from ...Dtypes.FaceProcess import FaceUser
+from ...utils.FaceUserManager import FaceUserManager
+import warnings
 
+warnings.warn("Will be deprecated in the future", DeprecationWarning)
 
 class FaceRecognition(VisionNodeProgram):
     def __init__(
@@ -51,7 +54,7 @@ class FaceRecognition(VisionNodeProgram):
         landmarks = self.landmark_predictor(image, box)
         descriptor = self.landmark_vector_convertor.compute_face_descriptor(image, landmarks)
 
-        temp_user = FaceUser('', description=descriptor)
+        temp_user = FaceUser('', descriptor=descriptor)
 
         recognized_user = user_manager.sign_in(temp_user)
         self.vision_output['found_user'] = recognized_user
