@@ -24,7 +24,7 @@ SOFTWARE.
 
 """
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Any, List
 import numpy as np
 
@@ -65,3 +65,18 @@ class Detector:
     @abstractmethod
     def detect(self, image) -> Any:
         pass
+
+
+class Unit(ABC):
+    """
+    This abstract class act as any instance (units) that are related to ROS
+    """
+    @classmethod
+    def _check_status(cls):
+        """
+        Check if ROS is initialized
+        Returns:
+
+        """
+        if not rospy.core.is_initialized():
+            raise rospy.ROSException('Please initialize first')
