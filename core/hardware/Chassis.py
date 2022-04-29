@@ -28,10 +28,10 @@ import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from tf.transformations import euler_from_quaternion
-from .Abstract import Tools
+from . import Hardware
 
 
-class Chassis(Tools):
+class Chassis(Hardware):
     def __init__(self, cmd_topic='/cmd_vel'):
         super()._check_status()
 

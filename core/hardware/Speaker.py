@@ -22,46 +22,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-
-import json
+import warnings
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from home_robot_msgs.srv import SpeakerSrv
+from std_msgs.msg import String
 
-from .Abstract import Tools
+from . import Hardware
+from .FacialDisplayController import FacialDisplayController
 
 
-class SLAMController(Tools):
-    def __init__(self, config=None):
+class Speaker(Hardware):
+    SPEAKER_SRV_TIMEOUT = 6
+
+    def __init__(self, speaker_topic='/speaker/say', speaker_srv='/speaker/text'):
         super()._check_status()
-        if config is not None:
-            self.config = self.__load_config(config)
 
-        self.goal_pub = rospy.Publisher(
-            '/move_base_simple/goal',
-            PoseStamped,
+        self.facial_controller = FacialDisplayController()
+        try:
+            rospy.wait_for_service(speaker_srv, timeout=Speaker.SPEAKER_SRV_TIMEOUT)
+            self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
+        except rospy.exceptions.ROSException:
+            warnings.warn(
+                "Currently service speaker wasn't available, calling say_until_end will do nothing")
+            self.speaker_srv = lambda x: x
+
+        self.speaker_pub = rospy.Publisher(
+            speaker_topic,
+            String,
             queue_size=1
         )
 
-    def go_to_point(self, x, y, z, w, wait_until_end=False):
-        msg = PoseStamped()
-        msg.header.frame_id = 'map'
-        msg.pose.position.x = x
-        msg.pose.position.y = y
-        msg.pose.orientation.z = z
-        msg.pose.orientation.w = w
+    def say(self, text):
+        self.speaker_pub.publish(text)
+        self.facial_controller.change_emotion(text, 'happy-2')
 
-        while rospy.get_param('/status_monitor/status_code') != 0:
-            self.goal_pub.publish(msg)
-
-        if wait_until_end:
-            while rospy.get_param('/status_monitor/status_code') != 3:
-                continue
-
-    def go_to_loc(self, loc, wait_until_end=False):
-        x, y, z, w = self.config[loc]
-        self.go_to_point(x, y, z, w, wait_until_end)
-
-    @staticmethod
-    def __load_config(config_path):
-        return json.load(open(config_path, 'r'))
+    def say_until_end(self, text):
+        self.speaker_srv(text)
+        self.facial_controller.change_emotion(text, 'happy-2')

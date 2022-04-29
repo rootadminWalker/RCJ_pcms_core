@@ -31,10 +31,10 @@ try:
 except ModuleNotFoundError:
     warnings.warn("This module was currently unavailable in your machine, calling this will raise an traceback")
 
-from .Abstract import Tools
+from . import Hardware
 
 
-class ManipulatorController(Tools):
+class ManipulatorController(Hardware):
     MANI_SRV_NAME = '/goal_task_space_path_position_only'
     MANI_GRIPPER_SRV_NAME = '/goal_tool_control'
     MANI_JOINT_SRV_NAME = '/goal_joint_space_path'

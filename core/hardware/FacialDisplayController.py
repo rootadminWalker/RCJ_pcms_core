@@ -22,41 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
-import warnings
-
 import rospy
-from home_robot_msgs.srv import SpeakerSrv
 from std_msgs.msg import String
 
-from .Abstract import Tools
-from .FacialDisplayController import FacialDisplayController
+from . import Hardware
 
 
-class Speaker(Tools):
-    SPEAKER_SRV_TIMEOUT = 6
-
-    def __init__(self, speaker_topic='/speaker/say', speaker_srv='/speaker/text'):
-        super()._check_status()
-
-        self.facial_controller = FacialDisplayController()
-        try:
-            rospy.wait_for_service(speaker_srv, timeout=Speaker.SPEAKER_SRV_TIMEOUT)
-            self.speaker_srv = rospy.ServiceProxy(speaker_srv, SpeakerSrv)
-        except rospy.exceptions.ROSException:
-            warnings.warn(
-                "Currently service speaker wasn't available, calling say_until_end will do nothing")
-            self.speaker_srv = lambda x: x
-
-        self.speaker_pub = rospy.Publisher(
-            speaker_topic,
+class FacialDisplayController(Hardware):
+    def __init__(self):
+        super(FacialDisplayController, self)._check_status()
+        self.facial_pub = rospy.Publisher(
+            "/home_edu/facial",
             String,
-            queue_size=1
+            queue_size=1,
         )
 
-    def say(self, text):
-        self.speaker_pub.publish(text)
-        self.facial_controller.change_emotion(text, 'happy-2')
-
-    def say_until_end(self, text):
-        self.speaker_srv(text)
-        self.facial_controller.change_emotion(text, 'happy-2')
+    def change_emotion(self, text, emoji):
+        self.facial_pub.publish(f'{emoji}:{text}')
