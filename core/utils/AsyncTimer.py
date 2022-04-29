@@ -23,11 +23,11 @@ SOFTWARE.
 
 """
 
-from .Abstract import Tools
+from ..base_classes import Unit
 import rospy
 
 
-class AsyncTimer(Tools):
+class AsyncTimer(Unit):
     def __init__(self, duration, auto_start=False):
         super()._check_status()
         self.duration = rospy.Duration(duration)
