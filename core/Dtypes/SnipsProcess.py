@@ -30,7 +30,7 @@ from typing import List
 import hcl
 
 # Snips engine parse result
-from . import Namespace
+from .Namespace import Namespace
 
 
 class IntentConfigs:
