@@ -31,32 +31,24 @@ from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal
 from home_robot_msgs.srv import Session, SessionRequest
 from std_srvs.srv import Trigger
 
-from core.Dtypes import SubscribeIntent, Slots, IntentConfigs
-from core.Nodes import Node
-from core.tools import Speaker
+from core.Dtypes import IntentConfigs, SubscribeIntent
+from core.Nodes import Controller
+from core.hardware import Speaker
 
 
-def dummy_callback(intent, slots, raw_text, session, missed_slots):
+def dummy_callback(intent, slots, raw_text, session):
     return
 
 
-class ActionEvaluator(Node):
+class ActionEvaluator(Controller):
     def __init__(self):
         super(ActionEvaluator, self).__init__(
             'intent_ac',
             anonymous=False,
             default_state='NORMAL',
-            node_group='/intent/'
+            state_param_group='/intent/',
+            states=['NORMAL', 'ON_SESSION', 'SLOT_MISSING']
         )
-
-        # Load the intent configs
-        config_file = rospy.get_param(
-            '~config_file',
-            '/home/root_walker/workspace/ROS_projects/src/The_Essense_of_the_Grey_Region/config/ActionController/SnipsIntentConfigs/restaurant.json'
-        )
-        self.intent_configs = IntentConfigs(config_file)
-
-        self.intent2callback = {}
 
         # Call the start and stop flow service
         self.__start_session = rospy.ServiceProxy('/intent_manager/start_session', Session)
@@ -102,28 +94,15 @@ class ActionEvaluator(Node):
         """
         self.intent2callback[intent] = SubscribeIntent(callback, response)
 
-    def insufficient_callback(self, slots, required_slot):
-        self.speaker.say_until_end(required_slot.confirm_response)
-        if not self.on_session():
-            self.__start_insufficient_session(
-                next_intents=[],
-                custom_data=json.dumps(slots.raw_slots)
-            )
-        else:
-            self.__continue_insufficient_session(next_intents=[])
-
     def message_cb(self, goal: IntentACControllerGoal):
         # TODO async the callback function for preempt checking
         # Parse the data
         self.current_intent = goal.intent
-        slots = Slots(json.loads(goal.slots))
+        slots = dict_to_namespace(json.loads(goal.slots))
         raw_text = goal.raw_text
         session = None
         if self.on_session():
             session = goal.session
-
-        # check if the slots are sufficient for executing
-        missed_slots = self.intent_configs.find_missing_slots(self.current_intent, slots)
 
         # Execute the callbacks
         if self.current_intent not in self.intent2callback:
@@ -132,11 +111,9 @@ class ActionEvaluator(Node):
         else:
             resp_and_callback = self.intent2callback[self.current_intent]
             self.speaker.say_until_end(resp_and_callback.response)
-            callback = resp_and_callback.callback
+            callback = resp_and_callback.user_callback
 
-        callback(self.current_intent, slots, raw_text, session, missed_slots)
-
-        self.next_state_to_param()
+        callback(self.current_intent, slots, raw_text, session)
 
         # Set the callback was executed successfully
         self.current_intent = ''
@@ -166,14 +143,6 @@ class ActionEvaluator(Node):
         req.session_data.max_rounds += 1
         self.__continue_session(req)
 
-    def __start_insufficient_session(self, next_intents, custom_data=None, max_rounds=3):
-        self.set_state('INSUFFICIENT')
-        self.__start_session_partial('INSUFFICIENT', next_intents, custom_data, max_rounds)
-
-    def __continue_insufficient_session(self, next_intents, custom_data=None):
-        self.set_state('INSUFFICIENT')
-        self.__continue_session_partial(next_intents, custom_data)
-
     def start_session(self, next_intents, custom_data=None):
         """
         Establish a new session, which last for one round.
@@ -184,7 +153,6 @@ class ActionEvaluator(Node):
         Returns:
 
         """
-        self.set_state('ON_SESSION')
         self.__start_session_partial('NORMAL', next_intents, custom_data, 1)
 
     def continue_session(self, next_intents, custom_data=None):
@@ -197,7 +165,6 @@ class ActionEvaluator(Node):
         Returns:
 
         """
-        self.set_state('ON_SESSION')
         self.__continue_session_partial(next_intents, custom_data)
 
     def stop_session(self):
@@ -209,7 +176,6 @@ class ActionEvaluator(Node):
         if not self.on_session():
             raise RuntimeError("There isn't a session started")
 
-        self.set_state('NORMAL')
         self.__stop_session()
 
     def main(self):
