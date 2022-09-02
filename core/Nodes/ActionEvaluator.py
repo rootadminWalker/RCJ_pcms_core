@@ -28,11 +28,11 @@ import json
 import actionlib
 import rospy
 from home_robot_msgs.msg import IntentACControllerResult, IntentACControllerGoal, IntentACControllerAction
-from home_robot_msgs.srv import Session, SessionRequest
+from home_robot_msgs.srv import Session, SessionRequest, ContinueSess, ContinueSessRequest
 from std_srvs.srv import Trigger
 
-from core.Dtypes import IntentConfigs, SubscribeIntent
-from core.Nodes import Controller
+from core.Dtypes import IntentConfigs, SubscribeIntent, Slots
+from core.Nodes import Controller, Node
 from core.hardware import Speaker
 
 
@@ -40,23 +40,22 @@ def dummy_callback(intent, slots, raw_text, session):
     return
 
 
-class ActionEvaluator(Controller):
+class ActionEvaluator(Node):
     def __init__(self):
-        super(ActionEvaluator, self).__init__(
-            'intent_ac',
-            anonymous=False,
-            default_state='NORMAL',
-            state_param_group='/intent/',
-            states=['NORMAL', 'ON_SESSION', 'SLOT_MISSING']
-        )
+        super(ActionEvaluator, self).__init__('intent_ac', anonymous=False)
 
         # Call the start and stop flow service
         self.__start_session = rospy.ServiceProxy('/intent_manager/start_session', Session)
-        self.__continue_session = rospy.ServiceProxy('/intent_manager/continue_session', Session)
+        self.__continue_session = rospy.ServiceProxy('/intent_manager/continue_session', ContinueSess)
         self.__stop_session = rospy.ServiceProxy('/intent_manager/stop_session', Trigger)
 
         # Initialize the speaker
         self.speaker = Speaker()
+
+        # Intent to callbacks
+        self.intent2callback = {}
+        self.subscribe_intent('NotRecognized', dummy_callback, 'Not recognized')
+        self.subscribe_intent('Confirm', self.confirm_callback, '')
 
         # The current intent
         self.current_intent = ''
@@ -70,18 +69,27 @@ class ActionEvaluator(Controller):
         )
         self.action_controller_server.start()
 
-        self.main()
-
     @staticmethod
-    def on_session() -> bool:
-        """
-        Check if there is a established session
-        Returns: True or False
+    def on_session(session):
+        return session.id != ''
 
-        """
-        return rospy.get_param('/intent_manager/on_session')
+    def start_session(self, custom_data, possible_next_intents):
+        session_req = SessionRequest()
+        session_req.session_data.started_intent = self.current_intent
+        session_req.session_data.custom_data = json.dumps(custom_data)
+        session_req.session_data.possible_next_intents = possible_next_intents
+        self.__start_session(session_req)
 
-    def subscribe_intent(self, intent: str, callback, response: str) -> None:
+    def continue_session(self, custom_data, possible_next_intents):
+        continue_req = ContinueSessRequest()
+        continue_req.custom_data = json.dumps(custom_data)
+        continue_req.possible_next_intents = possible_next_intents
+        self.__continue_session(continue_req)
+
+    def stop_session(self):
+        self.__stop_session()
+
+    def subscribe_intent(self, intent: str, callback, response: str = '') -> None:
         """
         Assign a callback to an intent when it comes
         Args:
@@ -95,88 +103,28 @@ class ActionEvaluator(Controller):
         self.intent2callback[intent] = SubscribeIntent(callback, response)
 
     def message_cb(self, goal: IntentACControllerGoal):
-        # TODO async the callback function for preempt checking
-        # Parse the data
-        self.current_intent = goal.intent
-        slots = dict_to_namespace(json.loads(goal.slots))
+        intent = goal.intent
+        self.current_intent = intent
+        slots = Slots(json.loads(goal.slots))
         raw_text = goal.raw_text
-        session = None
-        if self.on_session():
-            session = goal.session
+        session = goal.session
+        if self.on_session(session):
+            session.custom_data = json.loads(session.custom_data)
 
-        # Execute the callbacks
-        if self.current_intent not in self.intent2callback:
-            rospy.logerr(f"Intent {self.current_intent}'s callback doesn't exist, doing nothing")
-            callback = dummy_callback
-        else:
-            resp_and_callback = self.intent2callback[self.current_intent]
-            self.speaker.say_until_end(resp_and_callback.response)
-            callback = resp_and_callback.user_callback
+        if intent in self.intent2callback:
+            intent_data = self.intent2callback[intent]
+            intent_data.callback(intent, slots, raw_text, session)
+            self.speaker.say_until_end(intent_data.response)
 
-        callback(self.current_intent, slots, raw_text, session)
+        self.action_controller_server.set_succeeded(IntentACControllerResult(True))
 
-        # Set the callback was executed successfully
-        self.current_intent = ''
-        result = IntentACControllerResult(True)
-        self.action_controller_server.set_succeeded(result)
+    def confirm_callback(self, intent, slots, raw_text, session):
+        print(session)
+        confirm_resp = session.custom_data['confirm_resp']
+        self.speaker.say_until_end(confirm_resp)
 
-    def __start_session_partial(self, session_type, next_intents, custom_data=None, max_rounds=1):
-        if self.on_session():
-            raise RuntimeError('A session has started already')
-
-        req = SessionRequest()
-        req.session_data.started_intent = self.current_intent
-        req.session_data.session_type = session_type
-        req.session_data.possible_next_intents = next_intents
-        req.session_data.custom_data = json.dumps(custom_data)
-        req.session_data.max_rounds = max_rounds
-        self.__start_session(req)
-
-    def __continue_session_partial(self, next_intents, custom_data=None):
-        if not self.on_session():
-            raise RuntimeError("You can't continue a 'None' session")
-
-        req = SessionRequest()
-        req.session_data.possible_next_intents = next_intents
-        if custom_data is not None:
-            req.session_data.custom_data = json.dumps(custom_data)
-        req.session_data.max_rounds += 1
-        self.__continue_session(req)
-
-    def start_session(self, next_intents, custom_data=None):
-        """
-        Establish a new session, which last for one round.
-        Args:
-            next_intents: A threshold for the coming intents, can be None if you allow anybody
-            custom_data: Data to pass through the whole session
-
-        Returns:
-
-        """
-        self.__start_session_partial('NORMAL', next_intents, custom_data, 1)
-
-    def continue_session(self, next_intents, custom_data=None):
-        """
-        Continue a establish session if you don't want it to perish
-        Args:
-            next_intents: A threshold for the coming intents, can be None if you allow anybody
-            custom_data: Data to pass through the whole session
-
-        Returns:
-
-        """
-        self.__continue_session_partial(next_intents, custom_data)
-
-    def stop_session(self):
-        """
-        Stop an established session
-        Returns:
-
-        """
-        if not self.on_session():
-            raise RuntimeError("There isn't a session started")
-
-        self.__stop_session()
+    def start(self):
+        self.main()
 
     def main(self):
         while not rospy.is_shutdown():

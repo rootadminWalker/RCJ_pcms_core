@@ -25,7 +25,7 @@ SOFTWARE.
 
 """
 
-from typing import List
+from typing import List, NamedTuple, Any
 
 import hcl
 
@@ -33,24 +33,98 @@ import hcl
 from .Namespace import Namespace
 
 
+class ParseResult(NamedTuple):
+    engine_id: str = ''
+    intent: str = None
+    intent_probability: float = .0
+    slots: List[dict] = []
+
+
+class SlotValue(NamedTuple):
+    rawValue: str = ''
+    value: Any = None
+    kind: str = ''
+
+
+class Slot(NamedTuple):
+    name: str = ''
+    range: tuple = ()
+    value: SlotValue = None
+    entity: str = ''
+
+
+class Slots:
+    def __init__(self, raw_slots):
+        self.raw_slots = raw_slots
+        self.slots = []
+        for slot in self.raw_slots:
+            self.slots.append(self.convert_dict_to_slot(slot))
+
+    @staticmethod
+    def convert_dict_to_slot(slot: dict):
+        slot_range = (slot['range']['start'], slot['range']['end'])
+        slot_value = SlotValue(slot['rawValue'], slot['value']['value'], slot['value']['kind'])
+        return Slot(slot['slotName'], slot_range, slot_value, slot['entity'])
+
+    def update_slot(self, slot: dict):
+        if (n := self.slot_idx(slot['slotName'])) > -1:
+            self.raw_slots[n] = slot
+            self.slots[n] = self.convert_dict_to_slot(slot)
+        else:
+            self.raw_slots.append(slot)
+            self.slots.append(self.convert_dict_to_slot(slot))
+
+    def update_slots(self, slots: List[dict]):
+        for slot in slots:
+            self.update_slot(slot)
+
+    def update_but_ignore_exist_slots(self, slots: List[dict]):
+        for slot in slots:
+            if not self.slot_exist(slot['slotName']):
+                self.update_slot(slot)
+
+    def list_slot_names(self):
+        slot_names = []
+        for slot in self.slots:
+            slot_names.append(slot.name)
+        return slot_names
+
+    def slot_idx(self, name):
+        for idx, slot in enumerate(self.slots):
+            if name == slot.name:
+                return idx
+        return -1
+
+    def slot_exist(self, name):
+        return self.slot_idx(name) > -1
+
+
 class IntentConfigs:
     INTENT_DEFAULT_CONFIG = Namespace(
-        allow_preempt=False,
+        required_slots=[],
         max_re_ask=1,
         confirm_intent='',
-        required_slots=[]
+        confirm_responses={}
     )
 
     def __init__(self, config_path: str):
         with open(config_path) as f:
             intent_configs = hcl.load(f)
             self.intents = Namespace.dict_to_namespace(intent_configs['intent'])
-            self.confirm_intents = Namespace.dict_to_namespace(intent_configs['confirm_intent'])
+            self.engines = []
+            self.datasets = []
+            if 'engines' in intent_configs:
+                self.engines = intent_configs['engines']
+            if 'datasets' in intent_configs:
+                self.datasets = intent_configs['datasets']
 
-    def find_missing_slots(self, target_intent: str, slots: Namespace) -> List[Namespace]:
-        for required_slot in self.__dict__[target_intent].required_slots:
-            if not slots.slot_exist(required_slot.slot_name):
-                yield required_slot
+    def find_missing_slots(self, target_intent: str, slots: Slots) -> List[Slots]:
+        missing_slots_list = []
+        if target_intent not in self.intents.__dict__:
+            return []
 
-    def __getitem__(self, item):
-        return self.__dict__[item]
+        for required_slot in self.intents[target_intent].required_slots:
+            if not slots.slot_exist(required_slot):
+                missing_slots_list.append(required_slot)
+
+        return missing_slots_list

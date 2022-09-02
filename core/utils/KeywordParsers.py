@@ -28,8 +28,9 @@ from abc import ABC, abstractmethod
 import rospy
 from snips_nlu import SnipsNLUEngine
 from snips_nlu.default_configs import CONFIG_EN
+from snips_nlu.dataset import Dataset
 
-from core.Dtypes import ParseResult, Slots
+from core.Dtypes import ParseResult
 
 
 class KeywordParser(ABC):
@@ -105,7 +106,10 @@ class HeySnipsNLUParser(KeywordParser):
 
         for dataset_id, dataset_path in dataset_configs.items():
             with open(dataset_path) as f:
-                samples_dataset = json.load(f)
+                if dataset_path.endswith('json'):
+                    samples_dataset = json.load(f)
+                elif dataset_path.endswith('yaml'):
+                    sample_dataset = Dataset.from_yaml_files('en', [dataset_path]).json
 
             nlu_engine = SnipsNLUEngine(config=CONFIG_EN)
             nlu_engine.fit(samples_dataset)
@@ -113,17 +117,24 @@ class HeySnipsNLUParser(KeywordParser):
 
         self.__sort_keyfunc = lambda d: d.intent_probability
 
-    def parse(self, text, key=None):
+    def parse(self, text):
+        results_list = []
+        for engine_id in self.nlu_engines.keys():
+            results_list.append(self.parse_with_engine_id(text, engine_id))
+
+        return results_list
+
+    def parse_with_threshold(self, text, key=None):
         if key is None:
             key = self.__intent_condition_valid
 
-        full_data = list(self.parse_full_data(text))
+        full_data = self.parse(text)
         full_data.sort(key=self.__sort_keyfunc, reverse=True)
 
         if key(full_data[0]):
             return full_data[0]
 
-        return ParseResult('', None, 0.0, Slots([]))
+        return ParseResult('', '', 0.0, [])
 
     @staticmethod
     def __intent_condition_valid(parse_data: ParseResult):
@@ -139,8 +150,3 @@ class HeySnipsNLUParser(KeywordParser):
 
         parsed_slots = parse_data['slots']
         return ParseResult(engine_id, user_intent, intent_probability, parsed_slots)
-
-    def parse_full_data(self, text):
-        for engine_id in self.nlu_engines.keys():
-            _, user_intent, intent_probability, parsed_slots = self.parse_with_engine_id(text, engine_id)
-            yield ParseResult(engine_id, user_intent, intent_probability, Slots(parsed_slots))
