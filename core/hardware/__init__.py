@@ -1,3 +1,5 @@
+import warnings
+
 from ..base_classes import Unit
 
 
@@ -12,4 +14,7 @@ from .ManipulatorController import ManipulatorController
 from .SLAMController import SLAMController
 from .FacialDisplayController import FacialDisplayController
 from .Speaker import Speaker
-from .YourTTS import YourTTS
+try:
+    from .YourTTS import YourTTS
+except ImportError as e:
+    warnings.warn(f'YourTTS missing package: {e}')
