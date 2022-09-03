@@ -1,11 +1,13 @@
 # from .PoseProcess import *
 from collections import namedtuple
 
-from .SnipsProcess import *
+try:
+    from .SnipsProcess import *
+except Exception:
+    pass
+
 from .boxProcess import *
 from .Namespace import Namespace
-from .SnipsProcess import IntentConfigs
-
 
 # Subscribe Intent
 SubscribeIntent = namedtuple('SubscribeIntent', ['callback', 'response'])
