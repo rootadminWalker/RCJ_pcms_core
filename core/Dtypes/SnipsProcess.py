@@ -67,7 +67,8 @@ class Slots:
         return Slot(slot['slotName'], slot_range, slot_value, slot['entity'])
 
     def update_slot(self, slot: dict):
-        if (n := self.slot_idx(slot['slotName'])) > -1:
+        n = self.slot_idx(slot['slotName'])
+        if n > -1:
             self.raw_slots[n] = slot
             self.slots[n] = self.convert_dict_to_slot(slot)
         else:
