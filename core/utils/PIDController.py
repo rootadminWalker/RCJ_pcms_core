@@ -23,22 +23,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 """
+import time
 
 
 class PIDController:
-    def __init__(self, kp, ki, kd):
+    def __init__(self, kp, ki, kd, current_time=None):
         self.kp = kp
         self.ki = ki
         self.kd = kd
 
         self.last_error = 0.
-        self.iter_error = 0.
+        self.integ_error = 0.
 
-    def update(self, error):
+        self.current_time = current_time if current_time is not None else time.time()
+        self.last_time = self.current_time
+
+    def update(self, error, current_time=None):
+        self.current_time = current_time if current_time is not None else time.time()
+        delta_time = self.current_time - self.last_time
+
+        self.integ_error += error * delta_time
         delta_error = error - self.last_error
-        calculate_value = self.kp * error + self.ki * self.iter_error + self.kd * delta_error
+
+        d_term = 0
+        if delta_time > 0:
+            d_term = delta_error / delta_time
+
+        calculate_value = self.kp * error + self.ki * self.integ_error + self.kd * d_term
 
         self.last_error = error
-        self.iter_error += error
+        self.last_time = current_time
 
         return calculate_value
