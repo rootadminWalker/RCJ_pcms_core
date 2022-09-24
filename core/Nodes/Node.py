@@ -63,7 +63,7 @@ class Node(ABC):
             console.log("Initialized ROS Node")
             self.rate = rospy.Rate(Node.ROS_RATE)
             console.log(f"Initialized ROS rate as {Node.ROS_RATE}")
-            rospy.Service('~reset', Trigger, self.reset)
+            rospy.Service('~reset', Trigger, self.dummy_happy)
             console.log(f"Initialized reset service")
 
         console.print(f"[bold green] Node /{name} initialized sucessfully")
@@ -77,12 +77,16 @@ class Node(ABC):
         """
         pass
 
+    def dummy_happy(self, _):
+        self.reset()
+        return TriggerResponse()
+
     @abstractmethod
     def reset(self) -> TriggerResponse:
         """
         Override this method to reset your own node by ~reset service
         """
-        return TriggerResponse()
+        pass
 
     @staticmethod
     def spin():
