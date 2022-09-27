@@ -60,6 +60,13 @@ class Slots:
         for slot in self.raw_slots:
             self.slots.append(self.convert_dict_to_slot(slot))
 
+    def __getitem__(self, idx: int):
+        assert isinstance(idx, int)
+        return self.slots[idx]
+
+    def __len__(self):
+        return len(self.slots)
+
     @staticmethod
     def convert_dict_to_slot(slot: dict):
         slot_range = (slot['range']['start'], slot['range']['end'])
@@ -111,7 +118,10 @@ class IntentConfigs:
     def __init__(self, config_path: str):
         with open(config_path) as f:
             intent_configs = hcl.load(f)
-            self.intents = Namespace.dict_to_namespace(intent_configs['intent'])
+
+            self.intents = Namespace()
+            if 'intent' in intent_configs:
+                self.intents = Namespace.dict_to_namespace(intent_configs['intent'])
             self.engines = []
             self.datasets = []
             if 'engines' in intent_configs:

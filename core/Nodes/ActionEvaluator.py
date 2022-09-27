@@ -24,6 +24,8 @@ SOFTWARE.
 
 """
 import json
+import random
+from typing import Union
 
 import actionlib
 import rospy
@@ -89,7 +91,7 @@ class ActionEvaluator(Node):
     def stop_session(self):
         self.__stop_session()
 
-    def subscribe_intent(self, intent: str, callback, response: str = '') -> None:
+    def subscribe_intent(self, intent: str, callback=dummy_callback, response: Union[list, str] = '') -> None:
         """
         Assign a callback to an intent when it comes
         Args:
@@ -114,7 +116,10 @@ class ActionEvaluator(Node):
         if intent in self.intent2callback:
             intent_data = self.intent2callback[intent]
             intent_data.callback(intent, slots, raw_text, session)
-            self.speaker.say_until_end(intent_data.response)
+            response = intent_data.response
+            if isinstance(response, list):
+                response = random.choice(response)
+            self.speaker.say_until_end(response)
 
         self.action_controller_server.set_succeeded(IntentACControllerResult(True))
 

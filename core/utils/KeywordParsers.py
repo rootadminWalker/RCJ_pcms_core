@@ -107,12 +107,12 @@ class HeySnipsNLUParser(KeywordParser):
         for dataset_id, dataset_path in dataset_configs.items():
             with open(dataset_path) as f:
                 if dataset_path.endswith('json'):
-                    samples_dataset = json.load(f)
+                    sample_dataset = json.load(f)
                 elif dataset_path.endswith('yaml'):
                     sample_dataset = Dataset.from_yaml_files('en', [dataset_path]).json
 
             nlu_engine = SnipsNLUEngine(config=CONFIG_EN)
-            nlu_engine.fit(samples_dataset)
+            nlu_engine.fit(sample_dataset)
             self.nlu_engines[dataset_id] = nlu_engine
 
         self.__sort_keyfunc = lambda d: d.intent_probability
