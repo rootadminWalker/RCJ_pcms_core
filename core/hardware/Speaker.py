@@ -58,5 +58,6 @@ class Speaker(Hardware):
         self.facial_controller.change_emotion(text, 'happy-2')
 
     def say_until_end(self, text):
-        self.speaker_srv(text)
         self.facial_controller.change_emotion(text, 'happy-2')
+        self.speaker_srv(text)
+        self.facial_controller.change_emotion('', 'happy')
